@@ -397,6 +397,9 @@ function App() {
           setDatosImputacion(nuevosDatos);
           localStorage.setItem('bmg_datos_imputacion', JSON.stringify(nuevosDatos));
           
+          // AUTO-CREAR PROYECTOS cuando se imputan horas
+          actualizarProyectos(resultado.proyectos);
+          
           procesados++;
         } catch (error) {
           errores.push(`${file.name}: ${error.message}`);
@@ -416,6 +419,46 @@ function App() {
     } catch (error) {
       console.error('Error procesando archivos:', error);
       alert('❌ Error: ' + error.message);
+    }
+  };
+
+  const actualizarProyectos = (proyectosImputados) => {
+    try {
+      // Cargar proyectos existentes
+      const proyectosData = localStorage.getItem('bmg_proyectos');
+      const proyectosExistentes = proyectosData ? JSON.parse(proyectosData) : {};
+      
+      let proyectosActualizados = { ...proyectosExistentes };
+      let nuevosProyectos = 0;
+      
+      // Por cada proyecto imputado, asegurar que existe en la base de datos
+      proyectosImputados.forEach(p => {
+        const key = `${p.cliente}_${p.proyecto}`;
+        
+        if (!proyectosActualizados[key]) {
+          // Crear nuevo proyecto
+          proyectosActualizados[key] = {
+            cliente: p.cliente,
+            proyecto: p.proyecto,
+            activo: true,
+            fechaCreacion: new Date().toISOString(),
+            ultimaImputacion: new Date().toISOString()
+          };
+          nuevosProyectos++;
+        } else {
+          // Actualizar última imputación
+          proyectosActualizados[key].ultimaImputacion = new Date().toISOString();
+        }
+      });
+      
+      // Guardar proyectos actualizados
+      localStorage.setItem('bmg_proyectos', JSON.stringify(proyectosActualizados));
+      
+      if (nuevosProyectos > 0) {
+        console.log(`✨ ${nuevosProyectos} nuevo(s) proyecto(s) creado(s) automáticamente`);
+      }
+    } catch (error) {
+      console.error('Error actualizando proyectos:', error);
     }
   };
 
