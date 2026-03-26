@@ -22,7 +22,6 @@
 *{margin:0;padding:0;box-sizing:border-box}
 body{background:var(--bg);color:var(--ink);font-family:'IBM Plex Sans',sans-serif;font-size:14px;min-height:100vh;display:flex;flex-direction:column}
 
-/* NAV */
 nav{background:var(--ink);color:white;height:52px;padding:0 28px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;flex-shrink:0}
 .nav-left{display:flex;align-items:center;gap:16px}
 .nav-back{font-family:'IBM Plex Mono',monospace;font-size:11px;color:rgba(255,255,255,.45);cursor:pointer;padding:4px 0;transition:color .15s;text-decoration:none}
@@ -31,10 +30,8 @@ nav{background:var(--ink);color:white;height:52px;padding:0 28px;display:flex;al
 .nav-title{font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;letter-spacing:.04em}
 .nav-right{font-family:'IBM Plex Mono',monospace;font-size:10px;color:rgba(255,255,255,.35)}
 
-/* LAYOUT */
 .layout{display:flex;flex:1;min-height:0}
 
-/* SIDEBAR */
 .sidebar{width:196px;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0}
 .sb-head{padding:16px 16px 12px;border-bottom:1px solid var(--border)}
 .sb-head-label{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-faint);margin-bottom:2px}
@@ -51,24 +48,18 @@ nav{background:var(--ink);color:white;height:52px;padding:0 28px;display:flex;al
 .sb-dot.complete{background:var(--green)}
 .sb-dot.partial{background:var(--amber)}
 
-/* MAIN */
 .main{flex:1;overflow-y:auto;padding:0}
 .main-inner{max-width:1000px;padding:24px 28px 60px}
 
-/* PAGE HEADER */
 .page-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px}
 .page-title{font-size:20px;font-weight:700;line-height:1}
 .page-sub{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ink-faint);margin-top:5px}
 .page-actions{display:flex;gap:8px}
 
-/* BUTTON */
 .btn{padding:9px 16px;border:none;font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:500;cursor:pointer;border-radius:3px;transition:all .15s;letter-spacing:.02em}
-.btn-primary{background:var(--ink);color:white}
-.btn-primary:hover{background:#2a2a28}
 .btn-success{background:var(--green);color:white}
 .btn-success:hover{background:#155a31}
 
-/* STATS GRID */
 .stats-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:24px}
 .stat-card{background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:14px 16px;border-left:3px solid var(--border)}
 .stat-card.complete{border-left-color:var(--green)}
@@ -78,7 +69,6 @@ nav{background:var(--ink);color:white;height:52px;padding:0 28px;display:flex;al
 .stat-val{font-family:'IBM Plex Mono',monospace;font-size:20px;font-weight:600;line-height:1;color:var(--ink)}
 .stat-sub{font-size:11px;color:var(--ink-dim);margin-top:4px}
 
-/* UPLOAD ZONE */
 .upload-zone{background:var(--surface);border:2px dashed var(--border);border-radius:4px;padding:32px 24px;text-align:center;cursor:pointer;transition:all .2s;margin-bottom:24px}
 .upload-zone:hover{border-color:var(--blue);background:var(--blue-bg)}
 .upload-zone.dragover{border-color:var(--blue);background:var(--blue-bg)}
@@ -86,25 +76,17 @@ nav{background:var(--ink);color:white;height:52px;padding:0 28px;display:flex;al
 .upload-text{font-size:14px;font-weight:500;margin-bottom:4px}
 .upload-subtext{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ink-dim)}
 
-/* EMPLOYEES SECTION */
 .employees-section{margin-bottom:24px}
 .section-title{font-size:15px;font-weight:600;margin-bottom:12px;display:flex;align-items:center;gap:8px}
-.add-employee{display:flex;gap:8px;margin-bottom:12px;background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:10px;align-items:center}
-.add-employee input{flex:1;border:none;background:transparent;font-size:13px;outline:none;font-family:'IBM Plex Sans',sans-serif}
-.add-employee button{padding:6px 14px;background:var(--blue);color:white;border:none;border-radius:3px;font-family:'IBM Plex Mono',monospace;font-size:10px;cursor:pointer;transition:background .15s}
-.add-employee button:hover{background:var(--blue-mid)}
 
 .employee-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px}
-.employee-item{background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:10px 12px;display:flex;align-items:center;justify-content:space-between;transition:all .1s}
+.employee-item{background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:10px 12px;display:flex;align-items:center;gap:8px;transition:all .1s}
 .employee-item:hover{border-color:var(--border-strong)}
 .employee-item.completed{background:var(--green-bg);border-color:var(--green-border)}
 .employee-item.pending{background:var(--red-bg);border-color:var(--border)}
 .employee-name{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:500}
 .status-icon{font-size:14px}
-.btn-delete{background:transparent;border:none;color:var(--red);cursor:pointer;padding:4px 6px;border-radius:3px;font-size:13px;transition:background .15s}
-.btn-delete:hover{background:var(--red-bg)}
 
-/* FILES SECTION */
 .files-section{background:var(--surface);border:1px solid var(--border);border-radius:4px;overflow:hidden}
 .files-header{background:var(--ink);color:white;padding:11px 16px;display:flex;align-items:center;justify-content:space-between}
 .files-title{font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;letter-spacing:.05em}
@@ -118,19 +100,20 @@ nav{background:var(--ink);color:white;height:52px;padding:0 28px;display:flex;al
 .file-details{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ink-dim);margin:2px 0}
 .file-meta{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--ink-faint);margin-top:4px}
 
+.btn-delete{background:transparent;border:none;color:var(--red);cursor:pointer;padding:4px 6px;border-radius:3px;font-size:13px;transition:background .15s}
+.btn-delete:hover{background:var(--red-bg)}
+
 .empty-state{padding:48px 24px;text-align:center;color:var(--ink-dim)}
 .empty-icon{font-size:48px;opacity:.3;margin-bottom:12px}
 .empty-text{font-size:13px}
 
+.alert{display:flex;align-items:flex-start;gap:10px;padding:12px 14px;border-radius:4px;font-size:12px;line-height:1.6;margin-bottom:20px;border:1px solid}
+.alert.warning{background:var(--amber-bg);border-color:var(--amber-border);color:var(--amber)}
+.alert-icon{flex-shrink:0;font-size:14px}
+
 input[type="file"]{display:none}
 
-/* LOADING */
 .loading{min-height:100vh;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--ink-dim)}
-
-::-webkit-scrollbar{width:8px;height:8px}
-::-webkit-scrollbar-track{background:var(--surface2)}
-::-webkit-scrollbar-thumb{background:var(--border-strong);border-radius:4px}
-::-webkit-scrollbar-thumb:hover{background:var(--ink-dim)}
 </style>
 </head>
 <body>
@@ -164,21 +147,12 @@ const { useState, useEffect, useRef } = React;
 const MESES = ['ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO', 'JULIO', 'AGOSTO', 'SEPTIEMBRE', 'OCTUBRE', 'NOVIEMBRE', 'DICIEMBRE'];
 const MESES_CORTOS = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
 
-const EMPLEADOS_INICIALES = [
-  'Ana Segura', 'Nuria Martin', 'Estefania Arpi', 'Alex Hirtoaga',
-  'Jeny Lagos', 'Noelia Perez', 'Laura Perez', 'Noelia Rodriguez',
-  'Julia Roldan', 'Saul Rodriguez', 'Keira', 'Rosalia',
-  'Laura Beltran', 'Cindy More', 'Pedro Peris', 'Carlos Lopez',
-  'Lluis Gibert', 'Xavi Gines', 'Juan Mudevar', 'Nur Apice'
-];
-
 function App() {
   const [mesActivo, setMesActivo] = useState('ENERO');
   const [empleados, setEmpleados] = useState([]);
   const [archivosSubidos, setArchivosSubidos] = useState({});
   const [datosImputacion, setDatosImputacion] = useState({});
   const [loading, setLoading] = useState(true);
-  const [nuevoEmpleado, setNuevoEmpleado] = useState('');
   const [dragOver, setDragOver] = useState(false);
   const fileInputRef = useRef(null);
 
@@ -194,31 +168,26 @@ function App() {
     try {
       setLoading(true);
       
-      // Cargar empleados desde configuración
       const empConfig = localStorage.getItem('bmg_empleados_config');
       if (empConfig) {
         const empleadosConfig = JSON.parse(empConfig);
-        // Extraer solo los nombres
         setEmpleados(empleadosConfig.map(e => e.nombre));
       } else {
-        // Si no hay configuración, usar lista inicial
-        setEmpleados(EMPLEADOS_INICIALES);
+        setEmpleados([]);
       }
 
-      // Cargar archivos subidos
       const archivosData = localStorage.getItem('bmg_archivos_subidos');
       if (archivosData) {
         setArchivosSubidos(JSON.parse(archivosData));
       }
 
-      // Cargar datos de imputación
       const imputacionData = localStorage.getItem('bmg_datos_imputacion');
       if (imputacionData) {
         setDatosImputacion(JSON.parse(imputacionData));
       }
     } catch (error) {
       console.error('Error cargando datos:', error);
-      setEmpleados(EMPLEADOS_INICIALES);
+      setEmpleados([]);
     } finally {
       setLoading(false);
     }
@@ -258,33 +227,6 @@ function App() {
     document.getElementById('nav-right').textContent = mes + ' 2026';
   };
 
-  const agregarEmpleado = () => {
-    if (!nuevoEmpleado.trim()) return;
-    
-    const nuevosEmpleados = [...empleados, nuevoEmpleado.trim()];
-    setEmpleados(nuevosEmpleados);
-    setNuevoEmpleado('');
-    
-    try {
-      localStorage.setItem('bmg_empleados_activos', JSON.stringify(nuevosEmpleados));
-    } catch (error) {
-      console.error('Error guardando empleado:', error);
-    }
-  };
-
-  const eliminarEmpleado = (empleado) => {
-    if (!window.confirm(`¿Eliminar a ${empleado} de la lista?`)) return;
-    
-    const nuevosEmpleados = empleados.filter(e => e !== empleado);
-    setEmpleados(nuevosEmpleados);
-    
-    try {
-      localStorage.setItem('bmg_empleados_activos', JSON.stringify(nuevosEmpleados));
-    } catch (error) {
-      console.error('Error eliminando empleado:', error);
-    }
-  };
-
   const procesarExcel = async (file, mes) => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -310,6 +252,11 @@ function App() {
             }
           }
 
+          if (!nombreEmpleado) {
+            reject(new Error('No se encontró el nombre del empleado'));
+            return;
+          }
+
           let headerRowIndex = -1;
           let mesColumnIndex = -1;
           
@@ -328,15 +275,15 @@ function App() {
           }
 
           if (headerRowIndex === -1 || mesColumnIndex === -1) {
-            reject(new Error('No se encontró la estructura esperada en el Excel'));
+            reject(new Error(`No se encontró la columna para ${mes}`));
             return;
           }
 
           const proyectos = [];
           for (let i = headerRowIndex + 2; i < jsonData.length; i++) {
             const row = jsonData[i];
-            const cliente = row[1] ? row[1].toString() : '';
-            const proyecto = row[2] ? row[2].toString() : '';
+            const cliente = row[1] ? row[1].toString().trim() : '';
+            const proyecto = row[2] ? row[2].toString().trim() : '';
             const horas = row[mesColumnIndex];
             
             if (cliente && horas && !isNaN(parseFloat(horas)) && parseFloat(horas) > 0) {
@@ -346,6 +293,11 @@ function App() {
                 horas: parseFloat(horas)
               });
             }
+          }
+
+          if (proyectos.length === 0) {
+            reject(new Error(`No hay horas imputadas para ${mes}`));
+            return;
           }
 
           resolve({
@@ -369,38 +321,47 @@ function App() {
     if (!files || files.length === 0) return;
 
     try {
+      let procesados = 0;
+      let errores = [];
+
       for (const file of files) {
-        const resultado = await procesarExcel(file, mesActivo);
-        
-        if (!resultado.empleado) {
-          alert(`❌ No se pudo identificar el empleado en ${file.name}`);
-          continue;
+        try {
+          const resultado = await procesarExcel(file, mesActivo);
+          
+          const key = `${mesActivo}_${resultado.empleado}`;
+          const nuevosArchivos = {
+            ...archivosSubidos,
+            [key]: {
+              empleado: resultado.empleado,
+              mes: mesActivo,
+              archivo: file.name,
+              fecha: resultado.fechaSubida
+            }
+          };
+          setArchivosSubidos(nuevosArchivos);
+          localStorage.setItem('bmg_archivos_subidos', JSON.stringify(nuevosArchivos));
+
+          const nuevosDatos = {
+            ...datosImputacion,
+            [key]: resultado
+          };
+          setDatosImputacion(nuevosDatos);
+          localStorage.setItem('bmg_datos_imputacion', JSON.stringify(nuevosDatos));
+          
+          procesados++;
+        } catch (error) {
+          errores.push(`${file.name}: ${error.message}`);
         }
-
-        const key = `${mesActivo}_${resultado.empleado}`;
-        const nuevosArchivos = {
-          ...archivosSubidos,
-          [key]: {
-            empleado: resultado.empleado,
-            mes: mesActivo,
-            archivo: file.name,
-            fecha: resultado.fechaSubida
-          }
-        };
-        setArchivosSubidos(nuevosArchivos);
-        localStorage.setItem('bmg_archivos_subidos', JSON.stringify(nuevosArchivos));
-
-        const nuevosDatos = {
-          ...datosImputacion,
-          [key]: resultado
-        };
-        setDatosImputacion(nuevosDatos);
-        localStorage.setItem('bmg_datos_imputacion', JSON.stringify(nuevosDatos));
       }
 
-      alert(`✅ ${files.length} archivo(s) procesado(s)`);
+      if (procesados > 0) {
+        alert(`✅ ${procesados} archivo(s) procesado(s)`);
+      }
+      if (errores.length > 0) {
+        alert(`⚠️ Errores:\n${errores.join('\n')}`);
+      }
     } catch (error) {
-      console.error('Error procesando archivo:', error);
+      console.error('Error procesando archivos:', error);
       alert('❌ Error: ' + error.message);
     }
   };
@@ -480,6 +441,28 @@ function App() {
     return <div className="loading">⏳ Cargando...</div>;
   }
 
+  if (empleados.length === 0) {
+    return (
+      <>
+        <div className="page-header">
+          <div>
+            <div className="page-title">Imputación — {mesActivo} 2026</div>
+            <div className="page-sub">Primero debes configurar los empleados</div>
+          </div>
+        </div>
+
+        <div className="alert warning">
+          <span className="alert-icon">⚠️</span>
+          <div>
+            No hay empleados configurados. Ve a <strong>Configuración</strong> y añade empleados.
+            <br/><br/>
+            <a href="config_bmg.html" style={{color:'var(--blue)',textDecoration:'underline'}}>→ Ir a Configuración</a>
+          </div>
+        </div>
+      </>
+    );
+  }
+
   const completados = contarCompletados(mesActivo);
   const pendientes = empleados.length - completados;
   const progreso = empleados.length > 0 ? Math.round((completados / empleados.length) * 100) : 0;
@@ -552,22 +535,11 @@ function App() {
       >
         <div className="upload-icon">📁</div>
         <div className="upload-text">Subir archivos Excel</div>
-        <div className="upload-subtext">Haz clic o arrastra archivos aquí · Múltiples archivos .xlsx</div>
+        <div className="upload-subtext">Haz clic o arrastra · Solo se lee la columna de {mesActivo}</div>
       </div>
 
       <div className="employees-section">
         <div className="section-title">👥 Empleados ({empleados.length})</div>
-        
-        <div className="add-employee">
-          <input
-            type="text"
-            value={nuevoEmpleado}
-            onChange={(e) => setNuevoEmpleado(e.target.value)}
-            onKeyPress={(e) => e.key === 'Enter' && agregarEmpleado()}
-            placeholder="Añadir empleado..."
-          />
-          <button onClick={agregarEmpleado}>+ Añadir</button>
-        </div>
 
         <div className="employee-grid">
           {empleados.map(empleado => {
@@ -578,7 +550,6 @@ function App() {
                   <span className="status-icon">{estado === 'completado' ? '✓' : '○'}</span>
                   <span>{empleado}</span>
                 </div>
-                <button onClick={() => eliminarEmpleado(empleado)} className="btn-delete">×</button>
               </div>
             );
           })}
