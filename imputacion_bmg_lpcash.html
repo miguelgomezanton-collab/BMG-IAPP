@@ -244,13 +244,19 @@ function App() {
           const worksheet = workbook.Sheets[sheetName];
           const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
           
-          // Extraer nombre del empleado del Excel
+          // Extraer nombre del empleado del Excel (Fila 2, Columna B = "NOMBRE:", Columna C = nombre)
           let nombreEmpleado = null;
-          for (let row of jsonData) {
-            if (row[1] && row[1].toString().toUpperCase().includes('NOMBRE')) {
-              nombreEmpleado = row[2] ? row[2].toString().trim() : null;
-              break;
+          for (let i = 0; i < Math.min(10, jsonData.length); i++) {
+            const row = jsonData[i];
+            // Buscar celda que contenga "NOMBRE"
+            for (let j = 0; j < row.length; j++) {
+              if (row[j] && row[j].toString().toUpperCase().includes('NOMBRE')) {
+                // El nombre está en la siguiente columna
+                nombreEmpleado = row[j + 1] ? row[j + 1].toString().trim() : null;
+                if (nombreEmpleado) break;
+              }
             }
+            if (nombreEmpleado) break;
           }
 
           if (!nombreEmpleado) {
