@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Configuración — BMG Imputación</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<style>
+:root {
+  --bg:#f7f7f5; --surface:#ffffff; --surface2:#f2f2ef; --surface3:#eaeae6;
+  --border:#e0dfd9; --border-strong:#c8c7c0;
+  --ink:#1a1a18; --ink-dim:#6b6b65; --ink-faint:#a8a8a2;
+  --green:#1a6b3c; --green-bg:#eaf4ee; --green-border:#b8ddc6;
+  --red:#c0392b; --red-bg:#fdf0ee;
+  --blue:#1a4a8a; --blue-bg:#eef3fc; --blue-border:#b8cef0; --blue-mid:#2563c4;
+  --amber:#9a5a00; --amber-bg:#fdf5e6; --amber-border:#f0d090;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:'IBM Plex Sans',sans-serif;font-size:14px;min-height:100vh}
+
+nav{background:var(--ink);color:white;height:52px;padding:0 28px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.nav-left{display:flex;align-items:center;gap:16px}
+.nav-back{font-family:'IBM Plex Mono',monospace;font-size:11px;color:rgba(255,255,255,.45);cursor:pointer;padding:4px 0;transition:color .15s;text-decoration:none}
+.nav-back:hover{color:rgba(255,255,255,.8)}
+.nav-sep{color:rgba(255,255,255,.2)}
+.nav-title{font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;letter-spacing:.04em}
+
+.container{max-width:900px;margin:0 auto;padding:24px 28px 60px}
+
+.page-header{margin-bottom:28px}
+.page-title{font-size:24px;font-weight:700;line-height:1.2;margin-bottom:6px}
+.page-sub{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ink-faint)}
+
+.section{background:var(--surface);border:1px solid var(--border);border-radius:4px;margin-bottom:24px;overflow:hidden}
+.section-header{background:var(--ink);color:white;padding:11px 16px;font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;letter-spacing:.05em;display:flex;align-items:center;justify-content:space-between}
+.section-body{padding:20px}
+
+.form-row{display:grid;grid-template-columns:1fr 180px 80px;gap:12px;margin-bottom:12px;align-items:center}
+.form-row.header{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-faint);font-weight:600;margin-bottom:8px}
+
+.input{width:100%;padding:9px 12px;border:2px solid var(--border);border-radius:3px;font-family:'IBM Plex Sans',sans-serif;font-size:13px;transition:border .15s;background:var(--surface)}
+.input:focus{outline:none;border-color:var(--blue);background:var(--blue-bg)}
+
+.select{width:100%;padding:9px 12px;border:2px solid var(--border);border-radius:3px;font-family:'IBM Plex Sans',sans-serif;font-size:13px;background:var(--surface);cursor:pointer;transition:border .15s}
+.select:focus{outline:none;border-color:var(--blue)}
+
+.btn{padding:9px 16px;border:none;font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:500;cursor:pointer;border-radius:3px;transition:all .15s;letter-spacing:.02em}
+.btn-primary{background:var(--blue);color:white}
+.btn-primary:hover{background:var(--blue-mid)}
+.btn-danger{background:transparent;color:var(--red);border:1px solid transparent}
+.btn-danger:hover{background:var(--red-bg);border-color:var(--red)}
+.btn-add{width:100%;background:var(--surface2);color:var(--ink-dim);border:2px dashed var(--border);margin-top:12px}
+.btn-add:hover{background:var(--surface3);border-color:var(--border-strong);color:var(--ink)}
+
+.employee-item{display:grid;grid-template-columns:1fr 180px 80px;gap:12px;padding:12px;background:var(--surface2);border-radius:3px;margin-bottom:8px;align-items:center}
+.employee-name{font-weight:500;font-size:13px}
+.employee-cat{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ink-dim)}
+
+.coste-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.coste-card{background:var(--surface2);border:2px solid var(--border);border-radius:4px;padding:16px;border-left:4px solid var(--border-strong)}
+.coste-card.legal{border-left-color:#e74c3c}
+.coste-card.paralegal{border-left-color:#2ecc71}
+.coste-card.it{border-left-color:#3498db}
+.coste-label{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-faint);margin-bottom:8px}
+.coste-input{width:100%;padding:10px 12px;border:2px solid var(--border);border-radius:3px;font-family:'IBM Plex Mono',monospace;font-size:18px;font-weight:600;text-align:center;background:var(--surface)}
+.coste-input:focus{outline:none;border-color:var(--blue);background:var(--blue-bg)}
+
+.save-bar{background:var(--green-bg);border-top:1px solid var(--green-border);padding:16px 20px;display:flex;align-items:center;justify-content:space-between}
+.save-msg{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--green);display:flex;align-items:center;gap:8px}
+.btn-save{background:var(--green);color:white;padding:10px 24px;font-weight:600}
+.btn-save:hover{background:#155a31}
+
+.alert{display:flex;align-items:flex-start;gap:10px;padding:12px 14px;border-radius:4px;font-size:12px;line-height:1.6;margin-bottom:20px;border:1px solid}
+.alert.info{background:var(--blue-bg);border-color:var(--blue-border);color:var(--blue)}
+.alert-icon{flex-shrink:0;font-size:14px}
+
+.loading{min-height:100vh;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--ink-dim)}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-left">
+    <span class="nav-back">← BMG</span>
+    <span class="nav-sep">/</span>
+    <span class="nav-title">Configuración</span>
+  </div>
+</nav>
+
+<div class="container" id="root"></div>
+
+<script type="text/babel">
+const { useState, useEffect } = React;
+
+const CATEGORIAS = ['LEGAL', 'PARALEGAL', 'IT'];
+
+function App() {
+  const [empleados, setEmpleados] = useState([]);
+  const [costesHora, setCostesHora] = useState({
+    LEGAL: 45,
+    PARALEGAL: 25,
+    IT: 35
+  });
+  const [loading, setLoading] = useState(true);
+  const [guardado, setGuardado] = useState(false);
+
+  useEffect(() => {
+    cargarDatos();
+  }, []);
+
+  const cargarDatos = async () => {
+    try {
+      setLoading(true);
+      
+      // Cargar empleados
+      const empData = await window.storage.get('empleados_config');
+      if (empData) {
+        setEmpleados(JSON.parse(empData.value));
+      }
+
+      // Cargar costes/hora
+      const costesData = await window.storage.get('costes_hora');
+      if (costesData) {
+        setCostesHora(JSON.parse(costesData.value));
+      }
+    } catch (error) {
+      console.log('Inicializando configuración nueva');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const agregarEmpleado = () => {
+    const nuevoId = Date.now();
+    setEmpleados([...empleados, {
+      id: nuevoId,
+      nombre: '',
+      categoria: 'LEGAL'
+    }]);
+  };
+
+  const actualizarEmpleado = (id, campo, valor) => {
+    setEmpleados(empleados.map(emp => 
+      emp.id === id ? { ...emp, [campo]: valor } : emp
+    ));
+  };
+
+  const eliminarEmpleado = (id) => {
+    setEmpleados(empleados.filter(emp => emp.id !== id));
+  };
+
+  const actualizarCoste = (categoria, valor) => {
+    const num = parseFloat(valor) || 0;
+    setCostesHora({ ...costesHora, [categoria]: num });
+  };
+
+  const guardarConfiguracion = async () => {
+    try {
+      // Validar que todos los empleados tengan nombre
+      const empleadosValidos = empleados.filter(emp => emp.nombre.trim() !== '');
+      
+      if (empleadosValidos.length === 0) {
+        alert('⚠️ Debes añadir al menos un empleado con nombre');
+        return;
+      }
+
+      // Guardar empleados
+      await window.storage.set('empleados_config', JSON.stringify(empleadosValidos));
+      
+      // Guardar costes/hora
+      await window.storage.set('costes_hora', JSON.stringify(costesHora));
+
+      setGuardado(true);
+      setTimeout(() => setGuardado(false), 3000);
+      
+      alert('✅ Configuración guardada correctamente');
+    } catch (error) {
+      console.error('Error guardando:', error);
+      alert('❌ Error al guardar la configuración');
+    }
+  };
+
+  if (loading) {
+    return <div className="loading">⏳ Cargando configuración...</div>;
+  }
+
+  return (
+    <>
+      <div className="page-header">
+        <div className="page-title">Configuración Inicial</div>
+        <div className="page-sub">Define empleados y costes/hora antes de empezar</div>
+      </div>
+
+      <div className="alert info">
+        <span className="alert-icon">ℹ️</span>
+        <div>
+          Esta configuración se utilizará para procesar las imputaciones de horas. 
+          Los empleados que añadas aquí aparecerán automáticamente en todos los meses.
+        </div>
+      </div>
+
+      {/* SECCIÓN EMPLEADOS */}
+      <div className="section">
+        <div className="section-header">
+          <span>👥 EMPLEADOS ({empleados.filter(e => e.nombre.trim()).length})</span>
+        </div>
+        <div className="section-body">
+          <div className="form-row header">
+            <div>NOMBRE EMPLEADO</div>
+            <div>CATEGORÍA</div>
+            <div></div>
+          </div>
+
+          {empleados.map(emp => (
+            <div key={emp.id} className="form-row">
+              <input
+                type="text"
+                className="input"
+                value={emp.nombre}
+                onChange={(e) => actualizarEmpleado(emp.id, 'nombre', e.target.value)}
+                placeholder="Nombre completo..."
+              />
+              <select
+                className="select"
+                value={emp.categoria}
+                onChange={(e) => actualizarEmpleado(emp.id, 'categoria', e.target.value)}
+              >
+                {CATEGORIAS.map(cat => (
+                  <option key={cat} value={cat}>{cat}</option>
+                ))}
+              </select>
+              <button
+                className="btn btn-danger"
+                onClick={() => eliminarEmpleado(emp.id)}
+              >
+                🗑️ Eliminar
+              </button>
+            </div>
+          ))}
+
+          <button className="btn btn-add" onClick={agregarEmpleado}>
+            + Añadir Empleado
+          </button>
+        </div>
+      </div>
+
+      {/* SECCIÓN COSTES/HORA */}
+      <div className="section">
+        <div className="section-header">
+          <span>💰 COSTE/HORA POR CATEGORÍA</span>
+        </div>
+        <div className="section-body">
+          <div className="coste-grid">
+            <div className="coste-card legal">
+              <div className="coste-label">LEGAL</div>
+              <input
+                type="number"
+                className="coste-input"
+                value={costesHora.LEGAL}
+                onChange={(e) => actualizarCoste('LEGAL', e.target.value)}
+                step="0.5"
+              />
+              <div style={{textAlign:'center',fontSize:'11px',color:'var(--ink-dim)',marginTop:'6px'}}>
+                €/hora
+              </div>
+            </div>
+
+            <div className="coste-card paralegal">
+              <div className="coste-label">PARALEGAL</div>
+              <input
+                type="number"
+                className="coste-input"
+                value={costesHora.PARALEGAL}
+                onChange={(e) => actualizarCoste('PARALEGAL', e.target.value)}
+                step="0.5"
+              />
+              <div style={{textAlign:'center',fontSize:'11px',color:'var(--ink-dim)',marginTop:'6px'}}>
+                €/hora
+              </div>
+            </div>
+
+            <div className="coste-card it">
+              <div className="coste-label">IT</div>
+              <input
+                type="number"
+                className="coste-input"
+                value={costesHora.IT}
+                onChange={(e) => actualizarCoste('IT', e.target.value)}
+                step="0.5"
+              />
+              <div style={{textAlign:'center',fontSize:'11px',color:'var(--ink-dim)',marginTop:'6px'}}>
+                €/hora
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* BARRA DE GUARDADO */}
+      <div className="save-bar">
+        <div className="save-msg">
+          {guardado ? (
+            <>
+              <span>✓</span>
+              <span>Configuración guardada correctamente</span>
+            </>
+          ) : (
+            <span>Recuerda guardar los cambios antes de continuar</span>
+          )}
+        </div>
+        <button className="btn btn-save" onClick={guardarConfiguracion}>
+          💾 Guardar Configuración
+        </button>
+      </div>
+    </>
+  );
+}
+
+ReactDOM.render(<App />, document.getElementById('root'));
+</script>
+
+</body>
+</html>
