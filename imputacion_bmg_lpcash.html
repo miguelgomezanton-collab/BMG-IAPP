@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Imputación de Horas — BMG</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root {
+  --bg:#f7f7f5; --surface:#ffffff; --surface2:#f2f2ef; --surface3:#eaeae6;
+  --border:#e0dfd9; --border-strong:#c8c7c0;
+  --ink:#1a1a18; --ink-dim:#6b6b65; --ink-faint:#a8a8a2;
+  --green:#1a6b3c; --green-bg:#eaf4ee; --green-border:#b8ddc6;
+  --red:#c0392b; --red-bg:#fdf0ee;
+  --blue:#1a4a8a; --blue-bg:#eef3fc; --blue-border:#b8cef0; --blue-mid:#2563c4;
+  --amber:#9a5a00; --amber-bg:#fdf5e6; --amber-border:#f0d090;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:'IBM Plex Sans',sans-serif;font-size:14px;min-height:100vh;display:flex;flex-direction:column}
+
+/* NAV */
+nav{background:var(--ink);color:white;height:52px;padding:0 28px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;flex-shrink:0}
+.nav-left{display:flex;align-items:center;gap:16px}
+.nav-back{font-family:'IBM Plex Mono',monospace;font-size:11px;color:rgba(255,255,255,.45);cursor:pointer;padding:4px 0;transition:color .15s;text-decoration:none}
+.nav-back:hover{color:rgba(255,255,255,.8)}
+.nav-sep{color:rgba(255,255,255,.2)}
+.nav-title{font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;letter-spacing:.04em}
+.nav-right{font-family:'IBM Plex Mono',monospace;font-size:10px;color:rgba(255,255,255,.35)}
+
+/* LAYOUT */
+.layout{display:flex;flex:1;min-height:0}
+
+/* SIDEBAR */
+.sidebar{width:196px;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0}
+.sb-head{padding:16px 16px 12px;border-bottom:1px solid var(--border)}
+.sb-head-label{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-faint);margin-bottom:2px}
+.sb-head-sub{font-size:11px;color:var(--ink-dim)}
+.sb-months{flex:1;overflow-y:auto;padding:8px 0}
+.sb-section-label{font-family:'IBM Plex Mono',monospace;font-size:8px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-faint);padding:10px 16px 4px}
+.sb-month{display:flex;align-items:center;justify-content:space-between;padding:8px 16px;cursor:pointer;font-size:12px;color:var(--ink-dim);transition:background .1s;border-left:2px solid transparent}
+.sb-month:hover{background:var(--surface2);color:var(--ink)}
+.sb-month.active{background:var(--blue-bg);color:var(--blue);border-left-color:var(--blue);font-weight:600}
+.sb-month-right{display:flex;align-items:center;gap:5px}
+.sb-counter{font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--ink-faint)}
+.sb-month.active .sb-counter{color:var(--blue)}
+.sb-dot{width:6px;height:6px;border-radius:50%;background:var(--border-strong);flex-shrink:0}
+.sb-dot.complete{background:var(--green)}
+.sb-dot.partial{background:var(--amber)}
+
+/* MAIN */
+.main{flex:1;overflow-y:auto;padding:0}
+.main-inner{max-width:1000px;padding:24px 28px 60px}
+
+/* PAGE HEADER */
+.page-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px}
+.page-title{font-size:20px;font-weight:700;line-height:1}
+.page-sub{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ink-faint);margin-top:5px}
+.page-actions{display:flex;gap:8px}
+
+/* BUTTON */
+.btn{padding:9px 16px;border:none;font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:500;cursor:pointer;border-radius:3px;transition:all .15s;letter-spacing:.02em}
+.btn-primary{background:var(--ink);color:white}
+.btn-primary:hover{background:#2a2a28}
+.btn-success{background:var(--green);color:white}
+.btn-success:hover{background:#155a31}
+
+/* STATS GRID */
+.stats-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:24px}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:14px 16px;border-left:3px solid var(--border)}
+.stat-card.complete{border-left-color:var(--green)}
+.stat-card.partial{border-left-color:var(--amber)}
+.stat-card.empty{border-left-color:var(--red)}
+.stat-label{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-faint);margin-bottom:7px}
+.stat-val{font-family:'IBM Plex Mono',monospace;font-size:20px;font-weight:600;line-height:1;color:var(--ink)}
+.stat-sub{font-size:11px;color:var(--ink-dim);margin-top:4px}
+
+/* UPLOAD ZONE */
+.upload-zone{background:var(--surface);border:2px dashed var(--border);border-radius:4px;padding:32px 24px;text-align:center;cursor:pointer;transition:all .2s;margin-bottom:24px}
+.upload-zone:hover{border-color:var(--blue);background:var(--blue-bg)}
+.upload-zone.dragover{border-color:var(--blue);background:var(--blue-bg)}
+.upload-icon{font-size:32px;margin-bottom:12px;opacity:.6}
+.upload-text{font-size:14px;font-weight:500;margin-bottom:4px}
+.upload-subtext{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ink-dim)}
+
+/* EMPLOYEES SECTION */
+.employees-section{margin-bottom:24px}
+.section-title{font-size:15px;font-weight:600;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.add-employee{display:flex;gap:8px;margin-bottom:12px;background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:10px;align-items:center}
+.add-employee input{flex:1;border:none;background:transparent;font-size:13px;outline:none;font-family:'IBM Plex Sans',sans-serif}
+.add-employee button{padding:6px 14px;background:var(--blue);color:white;border:none;border-radius:3px;font-family:'IBM Plex Mono',monospace;font-size:10px;cursor:pointer;transition:background .15s}
+.add-employee button:hover{background:var(--blue-mid)}
+
+.employee-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px}
+.employee-item{background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:10px 12px;display:flex;align-items:center;justify-content:space-between;transition:all .1s}
+.employee-item:hover{border-color:var(--border-strong)}
+.employee-item.completed{background:var(--green-bg);border-color:var(--green-border)}
+.employee-item.pending{background:var(--red-bg);border-color:var(--border)}
+.employee-name{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:500}
+.status-icon{font-size:14px}
+.btn-delete{background:transparent;border:none;color:var(--red);cursor:pointer;padding:4px 6px;border-radius:3px;font-size:13px;transition:background .15s}
+.btn-delete:hover{background:var(--red-bg)}
+
+/* FILES SECTION */
+.files-section{background:var(--surface);border:1px solid var(--border);border-radius:4px;overflow:hidden}
+.files-header{background:var(--ink);color:white;padding:11px 16px;display:flex;align-items:center;justify-content:space-between}
+.files-title{font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;letter-spacing:.05em}
+.files-count{font-family:'IBM Plex Mono',monospace;font-size:10px;opacity:.6}
+
+.file-item{border-bottom:1px solid var(--border);padding:12px 16px;display:flex;align-items:flex-start;justify-content:space-between;transition:background .1s}
+.file-item:last-child{border-bottom:none}
+.file-item:hover{background:var(--surface2)}
+.file-info{flex:1}
+.file-name{font-size:13px;font-weight:600;margin-bottom:4px;display:flex;align-items:center;gap:8px}
+.file-details{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ink-dim);margin:2px 0}
+.file-meta{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--ink-faint);margin-top:4px}
+
+.empty-state{padding:48px 24px;text-align:center;color:var(--ink-dim)}
+.empty-icon{font-size:48px;opacity:.3;margin-bottom:12px}
+.empty-text{font-size:13px}
+
+input[type="file"]{display:none}
+
+/* LOADING */
+.loading{min-height:100vh;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--ink-dim)}
+
+::-webkit-scrollbar{width:8px;height:8px}
+::-webkit-scrollbar-track{background:var(--surface2)}
+::-webkit-scrollbar-thumb{background:var(--border-strong);border-radius:4px}
+::-webkit-scrollbar-thumb:hover{background:var(--ink-dim)}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-left">
+    <a class="nav-back" href="index.html">← BMG</a>
+    <span class="nav-sep">/</span>
+    <span class="nav-title">Imputación de Horas</span>
+  </div>
+  <div class="nav-right" id="nav-right">2026</div>
+</nav>
+
+<div class="layout">
+  <div class="sidebar">
+    <div class="sb-head">
+      <div class="sb-head-label">Control Mensual</div>
+      <div class="sb-head-sub">Seguimiento de archivos</div>
+    </div>
+    <div class="sb-months" id="sb-months"></div>
+  </div>
+
+  <div class="main">
+    <div class="main-inner" id="main-content"></div>
+  </div>
+</div>
+
+<script type="text/babel">
+const { useState, useEffect, useRef } = React;
+
+const MESES = ['ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO', 'JULIO', 'AGOSTO', 'SEPTIEMBRE', 'OCTUBRE', 'NOVIEMBRE', 'DICIEMBRE'];
+const MESES_CORTOS = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+
+const EMPLEADOS_INICIALES = [
+  'Ana Segura', 'Nuria Martin', 'Estefania Arpi', 'Alex Hirtoaga',
+  'Jeny Lagos', 'Noelia Perez', 'Laura Perez', 'Noelia Rodriguez',
+  'Julia Roldan', 'Saul Rodriguez', 'Keira', 'Rosalia',
+  'Laura Beltran', 'Cindy More', 'Pedro Peris', 'Carlos Lopez',
+  'Lluis Gibert', 'Xavi Gines', 'Juan Mudevar', 'Nur Apice'
+];
+
+function App() {
+  const [mesActivo, setMesActivo] = useState('ENERO');
+  const [empleados, setEmpleados] = useState([]);
+  const [archivosSubidos, setArchivosSubidos] = useState({});
+  const [datosImputacion, setDatosImputacion] = useState({});
+  const [loading, setLoading] = useState(true);
+  const [nuevoEmpleado, setNuevoEmpleado] = useState('');
+  const [dragOver, setDragOver] = useState(false);
+  const fileInputRef = useRef(null);
+
+  useEffect(() => {
+    cargarDatos();
+  }, []);
+
+  useEffect(() => {
+    renderSidebar();
+  }, [mesActivo, empleados, archivosSubidos]);
+
+  const cargarDatos = async () => {
+    try {
+      setLoading(true);
+      
+      const empleadosData = await window.storage.get('empleados_activos');
+      if (empleadosData) {
+        setEmpleados(JSON.parse(empleadosData.value));
+      } else {
+        setEmpleados(EMPLEADOS_INICIALES);
+        await window.storage.set('empleados_activos', JSON.stringify(EMPLEADOS_INICIALES));
+      }
+
+      const archivosData = await window.storage.get('archivos_subidos');
+      if (archivosData) {
+        setArchivosSubidos(JSON.parse(archivosData.value));
+      }
+
+      const imputacionData = await window.storage.get('datos_imputacion');
+      if (imputacionData) {
+        setDatosImputacion(JSON.parse(imputacionData.value));
+      }
+    } catch (error) {
+      console.error('Error cargando datos:', error);
+      setEmpleados(EMPLEADOS_INICIALES);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const renderSidebar = () => {
+    const year = new Date().getFullYear();
+    let html = `<div class="sb-section-label">${year}</div>`;
+    
+    MESES.forEach((mes, idx) => {
+      const completados = contarCompletados(mes);
+      const total = empleados.length;
+      const pct = total > 0 ? completados / total : 0;
+      
+      let dotClass = '';
+      if (pct === 1) dotClass = 'complete';
+      else if (pct > 0) dotClass = 'partial';
+      
+      const active = mes === mesActivo ? 'active' : '';
+      
+      html += `
+        <div class="sb-month ${active}" onclick="window.selectMonth('${mes}')">
+          <span>${MESES_CORTOS[idx]}</span>
+          <div class="sb-month-right">
+            <span class="sb-counter">${completados}/${total}</span>
+            <div class="sb-dot ${dotClass}"></div>
+          </div>
+        </div>
+      `;
+    });
+    
+    document.getElementById('sb-months').innerHTML = html;
+  };
+
+  window.selectMonth = (mes) => {
+    setMesActivo(mes);
+    document.getElementById('nav-right').textContent = mes + ' 2026';
+  };
+
+  const agregarEmpleado = async () => {
+    if (!nuevoEmpleado.trim()) return;
+    
+    const nuevosEmpleados = [...empleados, nuevoEmpleado.trim()];
+    setEmpleados(nuevosEmpleados);
+    setNuevoEmpleado('');
+    
+    try {
+      await window.storage.set('empleados_activos', JSON.stringify(nuevosEmpleados));
+    } catch (error) {
+      console.error('Error guardando empleado:', error);
+    }
+  };
+
+  const eliminarEmpleado = async (empleado) => {
+    if (!window.confirm(`¿Eliminar a ${empleado} de la lista?`)) return;
+    
+    const nuevosEmpleados = empleados.filter(e => e !== empleado);
+    setEmpleados(nuevosEmpleados);
+    
+    try {
+      await window.storage.set('empleados_activos', JSON.stringify(nuevosEmpleados));
+    } catch (error) {
+      console.error('Error eliminando empleado:', error);
+    }
+  };
+
+  const procesarExcel = async (file, mes) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      
+      reader.onload = (e) => {
+        try {
+          const data = new Uint8Array(e.target.result);
+          const workbook = XLSX.read(data, { type: 'array' });
+          
+          const sheetName = workbook.SheetNames.find(name => 
+            name.toLowerCase().includes('imputacion') || 
+            name.toLowerCase().includes('imputación')
+          ) || workbook.SheetNames[0];
+          
+          const worksheet = workbook.Sheets[sheetName];
+          const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+          
+          let nombreEmpleado = null;
+          for (let row of jsonData) {
+            if (row[1] && row[1].toString().toUpperCase().includes('NOMBRE')) {
+              nombreEmpleado = row[2] ? row[2].toString().trim() : null;
+              break;
+            }
+          }
+
+          let headerRowIndex = -1;
+          let mesColumnIndex = -1;
+          
+          for (let i = 0; i < jsonData.length; i++) {
+            const row = jsonData[i];
+            if (row[1] && row[1].toString().toUpperCase().includes('CLIENTE')) {
+              headerRowIndex = i;
+              for (let j = 0; j < row.length; j++) {
+                if (row[j] && row[j].toString().toUpperCase() === mes.toUpperCase()) {
+                  mesColumnIndex = j;
+                  break;
+                }
+              }
+              break;
+            }
+          }
+
+          if (headerRowIndex === -1 || mesColumnIndex === -1) {
+            reject(new Error('No se encontró la estructura esperada en el Excel'));
+            return;
+          }
+
+          const proyectos = [];
+          for (let i = headerRowIndex + 2; i < jsonData.length; i++) {
+            const row = jsonData[i];
+            const cliente = row[1] ? row[1].toString() : '';
+            const proyecto = row[2] ? row[2].toString() : '';
+            const horas = row[mesColumnIndex];
+            
+            if (cliente && horas && !isNaN(parseFloat(horas)) && parseFloat(horas) > 0) {
+              proyectos.push({
+                cliente,
+                proyecto,
+                horas: parseFloat(horas)
+              });
+            }
+          }
+
+          resolve({
+            empleado: nombreEmpleado,
+            mes,
+            proyectos,
+            archivo: file.name,
+            fechaSubida: new Date().toISOString()
+          });
+        } catch (error) {
+          reject(error);
+        }
+      };
+      
+      reader.onerror = () => reject(new Error('Error leyendo el archivo'));
+      reader.readAsArrayBuffer(file);
+    });
+  };
+
+  const handleFileUpload = async (files) => {
+    if (!files || files.length === 0) return;
+
+    try {
+      for (const file of files) {
+        const resultado = await procesarExcel(file, mesActivo);
+        
+        if (!resultado.empleado) {
+          alert(`❌ No se pudo identificar el empleado en ${file.name}`);
+          continue;
+        }
+
+        const key = `${mesActivo}_${resultado.empleado}`;
+        const nuevosArchivos = {
+          ...archivosSubidos,
+          [key]: {
+            empleado: resultado.empleado,
+            mes: mesActivo,
+            archivo: file.name,
+            fecha: resultado.fechaSubida
+          }
+        };
+        setArchivosSubidos(nuevosArchivos);
+        await window.storage.set('archivos_subidos', JSON.stringify(nuevosArchivos));
+
+        const nuevosDatos = {
+          ...datosImputacion,
+          [key]: resultado
+        };
+        setDatosImputacion(nuevosDatos);
+        await window.storage.set('datos_imputacion', JSON.stringify(nuevosDatos));
+      }
+
+      alert(`✅ ${files.length} archivo(s) procesado(s)`);
+    } catch (error) {
+      console.error('Error procesando archivo:', error);
+      alert('❌ Error: ' + error.message);
+    }
+  };
+
+  const eliminarArchivo = async (mes, empleado) => {
+    if (!window.confirm(`¿Eliminar archivo de ${empleado}?`)) return;
+
+    const key = `${mes}_${empleado}`;
+    
+    const nuevosArchivos = { ...archivosSubidos };
+    delete nuevosArchivos[key];
+    setArchivosSubidos(nuevosArchivos);
+    await window.storage.set('archivos_subidos', JSON.stringify(nuevosArchivos));
+
+    const nuevosDatos = { ...datosImputacion };
+    delete nuevosDatos[key];
+    setDatosImputacion(nuevosDatos);
+    await window.storage.set('datos_imputacion', JSON.stringify(nuevosDatos));
+  };
+
+  const obtenerEstadoEmpleado = (mes, empleado) => {
+    const key = `${mes}_${empleado}`;
+    return archivosSubidos[key] ? 'completado' : 'pendiente';
+  };
+
+  const contarCompletados = (mes) => {
+    return empleados.filter(emp => obtenerEstadoEmpleado(mes, emp) === 'completado').length;
+  };
+
+  const exportarDatosMes = (mes) => {
+    const datosMes = empleados.map(empleado => {
+      const key = `${mes}_${empleado}`;
+      const datos = datosImputacion[key];
+      return {
+        empleado,
+        estado: datos ? 'Completado' : 'Pendiente',
+        fecha: datos ? new Date(datos.fechaSubida).toLocaleString('es-ES') : '-',
+        totalHoras: datos ? datos.proyectos.reduce((sum, p) => sum + p.horas, 0) : 0,
+        proyectos: datos ? datos.proyectos : []
+      };
+    });
+
+    let csv = 'Empleado,Estado,Fecha Subida,Total Horas,Cliente,Proyecto,Horas\n';
+    datosMes.forEach(emp => {
+      if (emp.proyectos.length === 0) {
+        csv += `"${emp.empleado}","${emp.estado}","${emp.fecha}","${emp.totalHoras}","","",""\n`;
+      } else {
+        emp.proyectos.forEach((proy, idx) => {
+          if (idx === 0) {
+            csv += `"${emp.empleado}","${emp.estado}","${emp.fecha}","${emp.totalHoras}","${proy.cliente}","${proy.proyecto}","${proy.horas}"\n`;
+          } else {
+            csv += `"","","","","${proy.cliente}","${proy.proyecto}","${proy.horas}"\n`;
+          }
+        });
+      }
+    });
+
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `Imputacion_${mes}_${new Date().toISOString().split('T')[0]}.csv`;
+    link.click();
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setDragOver(false);
+    const files = Array.from(e.dataTransfer.files).filter(f => 
+      f.name.endsWith('.xlsx') || f.name.endsWith('.xls')
+    );
+    if (files.length > 0) {
+      handleFileUpload(files);
+    }
+  };
+
+  if (loading) {
+    return <div className="loading">⏳ Cargando...</div>;
+  }
+
+  const completados = contarCompletados(mesActivo);
+  const pendientes = empleados.length - completados;
+  const progreso = empleados.length > 0 ? Math.round((completados / empleados.length) * 100) : 0;
+
+  const archivosDelMes = empleados
+    .filter(emp => obtenerEstadoEmpleado(mesActivo, emp) === 'completado')
+    .map(empleado => {
+      const key = `${mesActivo}_${empleado}`;
+      return {
+        empleado,
+        ...archivosSubidos[key],
+        datos: datosImputacion[key]
+      };
+    });
+
+  return (
+    <>
+      <div className="page-header">
+        <div>
+          <div className="page-title">Imputación — {mesActivo} 2026</div>
+          <div className="page-sub">
+            {completados} de {empleados.length} archivos recibidos
+          </div>
+        </div>
+        {completados > 0 && (
+          <div className="page-actions">
+            <button className="btn btn-success" onClick={() => exportarDatosMes(mesActivo)}>
+              📊 Exportar CSV
+            </button>
+          </div>
+        )}
+      </div>
+
+      <div className="stats-grid">
+        <div className={`stat-card ${progreso === 100 ? 'complete' : progreso > 0 ? 'partial' : 'empty'}`}>
+          <div className="stat-label">Completados</div>
+          <div className="stat-val">{completados}</div>
+          <div className="stat-sub">de {empleados.length} empleados</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-label">Pendientes</div>
+          <div className="stat-val">{pendientes}</div>
+          <div className="stat-sub">{progreso}% progreso</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-label">Total Horas</div>
+          <div className="stat-val">
+            {archivosDelMes.reduce((sum, a) => 
+              sum + (a.datos?.proyectos.reduce((s, p) => s + p.horas, 0) || 0), 0
+            ).toFixed(0)}
+          </div>
+          <div className="stat-sub">horas imputadas</div>
+        </div>
+      </div>
+
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".xlsx,.xls"
+        multiple
+        onChange={(e) => handleFileUpload(Array.from(e.target.files))}
+      />
+
+      <div
+        className={`upload-zone ${dragOver ? 'dragover' : ''}`}
+        onClick={() => fileInputRef.current?.click()}
+        onDrop={handleDrop}
+        onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+        onDragLeave={() => setDragOver(false)}
+      >
+        <div className="upload-icon">📁</div>
+        <div className="upload-text">Subir archivos Excel</div>
+        <div className="upload-subtext">Haz clic o arrastra archivos aquí · Múltiples archivos .xlsx</div>
+      </div>
+
+      <div className="employees-section">
+        <div className="section-title">👥 Empleados ({empleados.length})</div>
+        
+        <div className="add-employee">
+          <input
+            type="text"
+            value={nuevoEmpleado}
+            onChange={(e) => setNuevoEmpleado(e.target.value)}
+            onKeyPress={(e) => e.key === 'Enter' && agregarEmpleado()}
+            placeholder="Añadir empleado..."
+          />
+          <button onClick={agregarEmpleado}>+ Añadir</button>
+        </div>
+
+        <div className="employee-grid">
+          {empleados.map(empleado => {
+            const estado = obtenerEstadoEmpleado(mesActivo, empleado);
+            return (
+              <div key={empleado} className={`employee-item ${estado === 'completado' ? 'completed' : 'pending'}`}>
+                <div className="employee-name">
+                  <span className="status-icon">{estado === 'completado' ? '✓' : '○'}</span>
+                  <span>{empleado}</span>
+                </div>
+                <button onClick={() => eliminarEmpleado(empleado)} className="btn-delete">×</button>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="files-section">
+        <div className="files-header">
+          <div className="files-title">Archivos Subidos</div>
+          <div className="files-count">{archivosDelMes.length} archivo{archivosDelMes.length !== 1 ? 's' : ''}</div>
+        </div>
+
+        {archivosDelMes.length === 0 ? (
+          <div className="empty-state">
+            <div className="empty-icon">📭</div>
+            <div className="empty-text">No hay archivos subidos para {mesActivo}</div>
+          </div>
+        ) : (
+          archivosDelMes.map(({ empleado, archivo, fecha, datos }) => {
+            const totalHoras = datos?.proyectos.reduce((sum, p) => sum + p.horas, 0) || 0;
+            return (
+              <div key={empleado} className="file-item">
+                <div className="file-info">
+                  <div className="file-name">
+                    <span>✓</span>
+                    <span>{empleado}</span>
+                  </div>
+                  <div className="file-details">📄 {archivo}</div>
+                  <div className="file-details">📅 {new Date(fecha).toLocaleString('es-ES')}</div>
+                  <div className="file-meta">
+                    {totalHoras.toFixed(2)}h · {datos?.proyectos.length || 0} proyecto{datos?.proyectos.length !== 1 ? 's' : ''}
+                  </div>
+                </div>
+                <button onClick={() => eliminarArchivo(mesActivo, empleado)} className="btn-delete">×</button>
+              </div>
+            );
+          })
+        )}
+      </div>
+    </>
+  );
+}
+
+ReactDOM.render(<App />, document.getElementById('main-content'));
+</script>
+
+</body>
+</html>
