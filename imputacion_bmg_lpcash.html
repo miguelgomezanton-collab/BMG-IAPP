@@ -319,6 +319,19 @@ function App() {
             const proyecto = row[proyectoCol] ? row[proyectoCol].toString().trim() : '';
             const horas = row[mesColumnIndex];
             
+            // Omitir filas con TOTAL, RESUMEN, SUMA u otras palabras de resumen
+            const clienteUpper = cliente.toUpperCase();
+            const proyectoUpper = proyecto.toUpperCase();
+            
+            if (clienteUpper.includes('TOTAL') || 
+                clienteUpper.includes('RESUMEN') || 
+                clienteUpper.includes('SUMA') ||
+                proyectoUpper.includes('TOTAL') ||
+                proyectoUpper.includes('RESUMEN') ||
+                proyectoUpper.includes('SUMA')) {
+              continue; // Saltar esta fila
+            }
+            
             if (cliente && horas && !isNaN(parseFloat(horas)) && parseFloat(horas) > 0) {
               proyectos.push({
                 cliente,
