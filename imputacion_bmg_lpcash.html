@@ -114,6 +114,18 @@ nav{background:var(--ink);color:white;height:52px;padding:0 28px;display:flex;al
 input[type="file"]{display:none}
 
 .loading{min-height:100vh;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--ink-dim)}
+
+.modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:1000}
+.modal{background:var(--surface);border-radius:8px;padding:28px;max-width:500px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.modal-title{font-size:18px;font-weight:600;margin-bottom:8px;color:var(--ink)}
+.modal-subtitle{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ink-dim);margin-bottom:20px}
+.modal-body{margin-bottom:24px}
+.modal-label{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-faint);margin-bottom:8px}
+.modal-select{width:100%;padding:12px;border:2px solid var(--border);border-radius:4px;font-family:'IBM Plex Sans',sans-serif;font-size:14px;background:var(--surface);cursor:pointer;transition:border .15s}
+.modal-select:focus{outline:none;border-color:var(--blue);background:var(--blue-bg)}
+.modal-actions{display:flex;gap:8px;justify-content:flex-end}
+.btn-cancel{background:var(--surface2);color:var(--ink-dim)}
+.btn-cancel:hover{background:var(--surface3);color:var(--ink)}
 </style>
 </head>
 <body>
@@ -154,6 +166,9 @@ function App() {
   const [datosImputacion, setDatosImputacion] = useState({});
   const [loading, setLoading] = useState(true);
   const [dragOver, setDragOver] = useState(false);
+  const [mostrarSelectorEmpleado, setMostrarSelectorEmpleado] = useState(false);
+  const [archivosTemp, setArchivosTemp] = useState([]);
+  const [empleadoSeleccionado, setEmpleadoSeleccionado] = useState('');
   const fileInputRef = useRef(null);
 
   useEffect(() => {
@@ -227,7 +242,7 @@ function App() {
     document.getElementById('nav-right').textContent = mes + ' 2026';
   };
 
-  const procesarExcel = async (file, mes) => {
+  const procesarExcel = async (file, mes, empleado) => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       
@@ -243,27 +258,8 @@ function App() {
           
           const worksheet = workbook.Sheets[sheetName];
           const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-          
-          // Extraer nombre del empleado del Excel (Fila 2, Columna B = "NOMBRE:", Columna C = nombre)
-          let nombreEmpleado = null;
-          for (let i = 0; i < Math.min(10, jsonData.length); i++) {
-            const row = jsonData[i];
-            // Buscar celda que contenga "NOMBRE"
-            for (let j = 0; j < row.length; j++) {
-              if (row[j] && row[j].toString().toUpperCase().includes('NOMBRE')) {
-                // El nombre está en la siguiente columna
-                nombreEmpleado = row[j + 1] ? row[j + 1].toString().trim() : null;
-                if (nombreEmpleado) break;
-              }
-            }
-            if (nombreEmpleado) break;
-          }
 
-          if (!nombreEmpleado) {
-            reject(new Error('No se encontró el nombre del empleado en el Excel'));
-            return;
-          }
-
+          // Buscar fila de encabezados (debe contener CLIENTE y el mes)
           let headerRowIndex = -1;
           let mesColumnIndex = -1;
           
@@ -271,6 +267,7 @@ function App() {
             const row = jsonData[i];
             if (row[1] && row[1].toString().toUpperCase().includes('CLIENTE')) {
               headerRowIndex = i;
+              // Buscar columna del mes específico
               for (let j = 0; j < row.length; j++) {
                 if (row[j] && row[j].toString().toUpperCase() === mes.toUpperCase()) {
                   mesColumnIndex = j;
@@ -282,10 +279,11 @@ function App() {
           }
 
           if (headerRowIndex === -1 || mesColumnIndex === -1) {
-            reject(new Error(`No se encontró la columna para ${mes}`));
+            reject(new Error(`No se encontró la columna para ${mes} en el Excel`));
             return;
           }
 
+          // Extraer datos de imputación SOLO de la columna del mes activo
           const proyectos = [];
           for (let i = headerRowIndex + 2; i < jsonData.length; i++) {
             const row = jsonData[i];
@@ -303,12 +301,12 @@ function App() {
           }
 
           if (proyectos.length === 0) {
-            reject(new Error(`No hay horas imputadas para ${mes}`));
+            reject(new Error(`No se encontraron horas imputadas para ${mes}`));
             return;
           }
 
           resolve({
-            empleado: nombreEmpleado,
+            empleado,
             mes,
             proyectos,
             archivo: file.name,
@@ -324,22 +322,25 @@ function App() {
     });
   };
 
-  const handleFileUpload = async (files) => {
-    if (!files || files.length === 0) return;
+  const confirmarSubida = async () => {
+    if (!empleadoSeleccionado) {
+      alert('⚠️ Debes seleccionar un empleado');
+      return;
+    }
 
     try {
       let procesados = 0;
       let errores = [];
 
-      for (const file of files) {
+      for (const file of archivosTemp) {
         try {
-          const resultado = await procesarExcel(file, mesActivo);
+          const resultado = await procesarExcel(file, mesActivo, empleadoSeleccionado);
           
-          const key = `${mesActivo}_${resultado.empleado}`;
+          const key = `${mesActivo}_${empleadoSeleccionado}`;
           const nuevosArchivos = {
             ...archivosSubidos,
             [key]: {
-              empleado: resultado.empleado,
+              empleado: empleadoSeleccionado,
               mes: mesActivo,
               archivo: file.name,
               fecha: resultado.fechaSubida
@@ -360,6 +361,10 @@ function App() {
           errores.push(`${file.name}: ${error.message}`);
         }
       }
+
+      setMostrarSelectorEmpleado(false);
+      setArchivosTemp([]);
+      setEmpleadoSeleccionado('');
 
       if (procesados > 0) {
         alert(`✅ ${procesados} archivo(s) procesado(s)`);
@@ -390,22 +395,8 @@ function App() {
   };
 
   const obtenerEstadoEmpleado = (mes, empleado) => {
-    // Buscar coincidencia exacta o por nombre del Excel
-    for (const key in archivosSubidos) {
-      if (key.startsWith(`${mes}_`)) {
-        const archivo = archivosSubidos[key];
-        // Normalizar y comparar
-        const normEmpleado = empleado.toLowerCase().trim();
-        const normArchivo = archivo.empleado.toLowerCase().trim();
-        
-        if (normEmpleado === normArchivo || 
-            normArchivo.includes(normEmpleado) || 
-            normEmpleado.includes(normArchivo)) {
-          return 'completado';
-        }
-      }
-    }
-    return 'pendiente';
+    const key = `${mes}_${empleado}`;
+    return archivosSubidos[key] ? 'completado' : 'pendiente';
   };
 
   const contarCompletados = (mes) => {
@@ -454,7 +445,8 @@ function App() {
       f.name.endsWith('.xlsx') || f.name.endsWith('.xls')
     );
     if (files.length > 0) {
-      handleFileUpload(files);
+      setArchivosTemp(files);
+      setMostrarSelectorEmpleado(true);
     }
   };
 
@@ -501,6 +493,49 @@ function App() {
 
   return (
     <>
+      {/* MODAL SELECTOR DE EMPLEADO */}
+      {mostrarSelectorEmpleado && (
+        <div className="modal-overlay">
+          <div className="modal">
+            <div className="modal-title">Seleccionar Empleado</div>
+            <div className="modal-subtitle">
+              {archivosTemp.length} archivo(s) seleccionado(s)
+            </div>
+            <div className="modal-body">
+              <div className="modal-label">¿De quién es este archivo?</div>
+              <select 
+                className="modal-select"
+                value={empleadoSeleccionado}
+                onChange={(e) => setEmpleadoSeleccionado(e.target.value)}
+              >
+                <option value="">Selecciona un empleado...</option>
+                {empleados.map(emp => (
+                  <option key={emp} value={emp}>{emp}</option>
+                ))}
+              </select>
+            </div>
+            <div className="modal-actions">
+              <button 
+                className="btn btn-cancel"
+                onClick={() => {
+                  setMostrarSelectorEmpleado(false);
+                  setArchivosTemp([]);
+                  setEmpleadoSeleccionado('');
+                }}
+              >
+                Cancelar
+              </button>
+              <button 
+                className="btn btn-primary"
+                onClick={confirmarSubida}
+              >
+                Subir Archivo
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="page-header">
         <div>
           <div className="page-title">Imputación — {mesActivo} 2026</div>
@@ -544,7 +579,13 @@ function App() {
         type="file"
         accept=".xlsx,.xls"
         multiple
-        onChange={(e) => handleFileUpload(Array.from(e.target.files))}
+        onChange={(e) => {
+          const files = Array.from(e.target.files);
+          if (files.length > 0) {
+            setArchivosTemp(files);
+            setMostrarSelectorEmpleado(true);
+          }
+        }}
       />
 
       <div
@@ -556,7 +597,7 @@ function App() {
       >
         <div className="upload-icon">📁</div>
         <div className="upload-text">Subir archivos Excel</div>
-        <div className="upload-subtext">Haz clic o arrastra · Solo se lee la columna de {mesActivo}</div>
+        <div className="upload-subtext">Haz clic o arrastra · Selecciona el empleado después</div>
       </div>
 
       <div className="employees-section">
