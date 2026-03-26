@@ -244,37 +244,17 @@ function App() {
           const worksheet = workbook.Sheets[sheetName];
           const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
           
-          let nombreEmpleadoExcel = null;
+          // Extraer nombre del empleado del Excel
+          let nombreEmpleado = null;
           for (let row of jsonData) {
             if (row[1] && row[1].toString().toUpperCase().includes('NOMBRE')) {
-              nombreEmpleadoExcel = row[2] ? row[2].toString().trim() : null;
-              break;
-            }
-          }
-
-          if (!nombreEmpleadoExcel) {
-            reject(new Error('No se encontró el nombre del empleado'));
-            return;
-          }
-
-          // Buscar coincidencia flexible con empleados configurados
-          const normalizar = (str) => str.toLowerCase().replace(/\s+/g, ' ').trim();
-          const nombreExcelNorm = normalizar(nombreEmpleadoExcel);
-          
-          let nombreEmpleado = null;
-          for (const emp of empleados) {
-            const empNorm = normalizar(emp);
-            // Comprobar si coincide exacto o si uno contiene al otro
-            if (empNorm === nombreExcelNorm || 
-                nombreExcelNorm.includes(empNorm) || 
-                empNorm.includes(nombreExcelNorm)) {
-              nombreEmpleado = emp; // Usar el nombre de la configuración
+              nombreEmpleado = row[2] ? row[2].toString().trim() : null;
               break;
             }
           }
 
           if (!nombreEmpleado) {
-            reject(new Error(`No se encontró "${nombreEmpleadoExcel}" en la configuración de empleados`));
+            reject(new Error('No se encontró el nombre del empleado en el Excel'));
             return;
           }
 
@@ -404,8 +384,22 @@ function App() {
   };
 
   const obtenerEstadoEmpleado = (mes, empleado) => {
-    const key = `${mes}_${empleado}`;
-    return archivosSubidos[key] ? 'completado' : 'pendiente';
+    // Buscar coincidencia exacta o por nombre del Excel
+    for (const key in archivosSubidos) {
+      if (key.startsWith(`${mes}_`)) {
+        const archivo = archivosSubidos[key];
+        // Normalizar y comparar
+        const normEmpleado = empleado.toLowerCase().trim();
+        const normArchivo = archivo.empleado.toLowerCase().trim();
+        
+        if (normEmpleado === normArchivo || 
+            normArchivo.includes(normEmpleado) || 
+            normEmpleado.includes(normArchivo)) {
+          return 'completado';
+        }
+      }
+    }
+    return 'pendiente';
   };
 
   const contarCompletados = (mes) => {
