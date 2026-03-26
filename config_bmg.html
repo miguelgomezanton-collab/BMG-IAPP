@@ -111,20 +111,20 @@ function App() {
     cargarDatos();
   }, []);
 
-  const cargarDatos = async () => {
+  const cargarDatos = () => {
     try {
       setLoading(true);
       
       // Cargar empleados
-      const empData = await window.storage.get('empleados_config');
+      const empData = localStorage.getItem('bmg_empleados_config');
       if (empData) {
-        setEmpleados(JSON.parse(empData.value));
+        setEmpleados(JSON.parse(empData));
       }
 
       // Cargar costes/hora
-      const costesData = await window.storage.get('costes_hora');
+      const costesData = localStorage.getItem('bmg_costes_hora');
       if (costesData) {
-        setCostesHora(JSON.parse(costesData.value));
+        setCostesHora(JSON.parse(costesData));
       }
     } catch (error) {
       console.log('Inicializando configuración nueva');
@@ -157,7 +157,7 @@ function App() {
     setCostesHora({ ...costesHora, [categoria]: num });
   };
 
-  const guardarConfiguracion = async () => {
+  const guardarConfiguracion = () => {
     try {
       // Validar que todos los empleados tengan nombre
       const empleadosValidos = empleados.filter(emp => emp.nombre.trim() !== '');
@@ -168,10 +168,10 @@ function App() {
       }
 
       // Guardar empleados
-      await window.storage.set('empleados_config', JSON.stringify(empleadosValidos));
+      localStorage.setItem('bmg_empleados_config', JSON.stringify(empleadosValidos));
       
       // Guardar costes/hora
-      await window.storage.set('costes_hora', JSON.stringify(costesHora));
+      localStorage.setItem('bmg_costes_hora', JSON.stringify(costesHora));
 
       setGuardado(true);
       setTimeout(() => setGuardado(false), 3000);

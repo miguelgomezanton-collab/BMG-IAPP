@@ -190,26 +190,31 @@ function App() {
     renderSidebar();
   }, [mesActivo, empleados, archivosSubidos]);
 
-  const cargarDatos = async () => {
+  const cargarDatos = () => {
     try {
       setLoading(true);
       
-      const empleadosData = await window.storage.get('empleados_activos');
-      if (empleadosData) {
-        setEmpleados(JSON.parse(empleadosData.value));
+      // Cargar empleados desde configuración
+      const empConfig = localStorage.getItem('bmg_empleados_config');
+      if (empConfig) {
+        const empleadosConfig = JSON.parse(empConfig);
+        // Extraer solo los nombres
+        setEmpleados(empleadosConfig.map(e => e.nombre));
       } else {
+        // Si no hay configuración, usar lista inicial
         setEmpleados(EMPLEADOS_INICIALES);
-        await window.storage.set('empleados_activos', JSON.stringify(EMPLEADOS_INICIALES));
       }
 
-      const archivosData = await window.storage.get('archivos_subidos');
+      // Cargar archivos subidos
+      const archivosData = localStorage.getItem('bmg_archivos_subidos');
       if (archivosData) {
-        setArchivosSubidos(JSON.parse(archivosData.value));
+        setArchivosSubidos(JSON.parse(archivosData));
       }
 
-      const imputacionData = await window.storage.get('datos_imputacion');
+      // Cargar datos de imputación
+      const imputacionData = localStorage.getItem('bmg_datos_imputacion');
       if (imputacionData) {
-        setDatosImputacion(JSON.parse(imputacionData.value));
+        setDatosImputacion(JSON.parse(imputacionData));
       }
     } catch (error) {
       console.error('Error cargando datos:', error);
@@ -253,7 +258,7 @@ function App() {
     document.getElementById('nav-right').textContent = mes + ' 2026';
   };
 
-  const agregarEmpleado = async () => {
+  const agregarEmpleado = () => {
     if (!nuevoEmpleado.trim()) return;
     
     const nuevosEmpleados = [...empleados, nuevoEmpleado.trim()];
@@ -261,20 +266,20 @@ function App() {
     setNuevoEmpleado('');
     
     try {
-      await window.storage.set('empleados_activos', JSON.stringify(nuevosEmpleados));
+      localStorage.setItem('bmg_empleados_activos', JSON.stringify(nuevosEmpleados));
     } catch (error) {
       console.error('Error guardando empleado:', error);
     }
   };
 
-  const eliminarEmpleado = async (empleado) => {
+  const eliminarEmpleado = (empleado) => {
     if (!window.confirm(`¿Eliminar a ${empleado} de la lista?`)) return;
     
     const nuevosEmpleados = empleados.filter(e => e !== empleado);
     setEmpleados(nuevosEmpleados);
     
     try {
-      await window.storage.set('empleados_activos', JSON.stringify(nuevosEmpleados));
+      localStorage.setItem('bmg_empleados_activos', JSON.stringify(nuevosEmpleados));
     } catch (error) {
       console.error('Error eliminando empleado:', error);
     }
@@ -383,14 +388,14 @@ function App() {
           }
         };
         setArchivosSubidos(nuevosArchivos);
-        await window.storage.set('archivos_subidos', JSON.stringify(nuevosArchivos));
+        localStorage.setItem('bmg_archivos_subidos', JSON.stringify(nuevosArchivos));
 
         const nuevosDatos = {
           ...datosImputacion,
           [key]: resultado
         };
         setDatosImputacion(nuevosDatos);
-        await window.storage.set('datos_imputacion', JSON.stringify(nuevosDatos));
+        localStorage.setItem('bmg_datos_imputacion', JSON.stringify(nuevosDatos));
       }
 
       alert(`✅ ${files.length} archivo(s) procesado(s)`);
@@ -400,7 +405,7 @@ function App() {
     }
   };
 
-  const eliminarArchivo = async (mes, empleado) => {
+  const eliminarArchivo = (mes, empleado) => {
     if (!window.confirm(`¿Eliminar archivo de ${empleado}?`)) return;
 
     const key = `${mes}_${empleado}`;
@@ -408,12 +413,12 @@ function App() {
     const nuevosArchivos = { ...archivosSubidos };
     delete nuevosArchivos[key];
     setArchivosSubidos(nuevosArchivos);
-    await window.storage.set('archivos_subidos', JSON.stringify(nuevosArchivos));
+    localStorage.setItem('bmg_archivos_subidos', JSON.stringify(nuevosArchivos));
 
     const nuevosDatos = { ...datosImputacion };
     delete nuevosDatos[key];
     setDatosImputacion(nuevosDatos);
-    await window.storage.set('datos_imputacion', JSON.stringify(nuevosDatos));
+    localStorage.setItem('bmg_datos_imputacion', JSON.stringify(nuevosDatos));
   };
 
   const obtenerEstadoEmpleado = (mes, empleado) => {
