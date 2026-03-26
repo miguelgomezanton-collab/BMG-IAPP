@@ -265,11 +265,21 @@ function App() {
           
           for (let i = 0; i < jsonData.length; i++) {
             const row = jsonData[i];
-            if (row[1] && row[1].toString().toUpperCase().includes('CLIENTE')) {
-              headerRowIndex = i;
-              // Buscar columna del mes específico
+            // Buscar fila que contenga "CLIENTE"
+            let tieneCliente = false;
+            for (let j = 0; j < row.length; j++) {
+              if (row[j] && row[j].toString().toUpperCase().includes('CLIENTE')) {
+                tieneCliente = true;
+                headerRowIndex = i;
+                break;
+              }
+            }
+            
+            // Si encontramos la fila con CLIENTE, buscar la columna del mes
+            if (tieneCliente) {
               for (let j = 0; j < row.length; j++) {
-                if (row[j] && row[j].toString().toUpperCase() === mes.toUpperCase()) {
+                const cellValue = row[j] ? row[j].toString().toUpperCase().trim() : '';
+                if (cellValue === mes.toUpperCase()) {
                   mesColumnIndex = j;
                   break;
                 }
@@ -278,23 +288,41 @@ function App() {
             }
           }
 
-          if (headerRowIndex === -1 || mesColumnIndex === -1) {
-            reject(new Error(`No se encontró la columna para ${mes} en el Excel`));
+          if (headerRowIndex === -1) {
+            reject(new Error('No se encontró la fila de encabezados (CLIENTE/PROYECTO)'));
+            return;
+          }
+
+          if (mesColumnIndex === -1) {
+            reject(new Error(`No se encontró la columna "${mes}" en el Excel. Verifica que el mes esté escrito correctamente.`));
             return;
           }
 
           // Extraer datos de imputación SOLO de la columna del mes activo
           const proyectos = [];
+          
+          // Buscar índice de columna CLIENTE y PROYECTO
+          const headerRow = jsonData[headerRowIndex];
+          let clienteCol = -1;
+          let proyectoCol = -1;
+          
+          for (let j = 0; j < headerRow.length; j++) {
+            const cellValue = headerRow[j] ? headerRow[j].toString().toUpperCase().trim() : '';
+            if (cellValue.includes('CLIENTE')) clienteCol = j;
+            if (cellValue.includes('PROYECTO')) proyectoCol = j;
+          }
+          
+          // Leer datos desde 2 filas después del header
           for (let i = headerRowIndex + 2; i < jsonData.length; i++) {
             const row = jsonData[i];
-            const cliente = row[1] ? row[1].toString().trim() : '';
-            const proyecto = row[2] ? row[2].toString().trim() : '';
+            const cliente = row[clienteCol] ? row[clienteCol].toString().trim() : '';
+            const proyecto = row[proyectoCol] ? row[proyectoCol].toString().trim() : '';
             const horas = row[mesColumnIndex];
             
             if (cliente && horas && !isNaN(parseFloat(horas)) && parseFloat(horas) > 0) {
               proyectos.push({
                 cliente,
-                proyecto,
+                proyecto: proyecto || '-',
                 horas: parseFloat(horas)
               });
             }
