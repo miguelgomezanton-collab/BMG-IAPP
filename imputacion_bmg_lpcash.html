@@ -244,16 +244,37 @@ function App() {
           const worksheet = workbook.Sheets[sheetName];
           const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
           
-          let nombreEmpleado = null;
+          let nombreEmpleadoExcel = null;
           for (let row of jsonData) {
             if (row[1] && row[1].toString().toUpperCase().includes('NOMBRE')) {
-              nombreEmpleado = row[2] ? row[2].toString().trim() : null;
+              nombreEmpleadoExcel = row[2] ? row[2].toString().trim() : null;
+              break;
+            }
+          }
+
+          if (!nombreEmpleadoExcel) {
+            reject(new Error('No se encontró el nombre del empleado'));
+            return;
+          }
+
+          // Buscar coincidencia flexible con empleados configurados
+          const normalizar = (str) => str.toLowerCase().replace(/\s+/g, ' ').trim();
+          const nombreExcelNorm = normalizar(nombreEmpleadoExcel);
+          
+          let nombreEmpleado = null;
+          for (const emp of empleados) {
+            const empNorm = normalizar(emp);
+            // Comprobar si coincide exacto o si uno contiene al otro
+            if (empNorm === nombreExcelNorm || 
+                nombreExcelNorm.includes(empNorm) || 
+                empNorm.includes(nombreExcelNorm)) {
+              nombreEmpleado = emp; // Usar el nombre de la configuración
               break;
             }
           }
 
           if (!nombreEmpleado) {
-            reject(new Error('No se encontró el nombre del empleado'));
+            reject(new Error(`No se encontró "${nombreEmpleadoExcel}" en la configuración de empleados`));
             return;
           }
 
