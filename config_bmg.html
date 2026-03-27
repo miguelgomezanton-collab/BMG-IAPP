@@ -104,6 +104,7 @@ function App() {
     PARALEGAL: 25,
     IT: 35
   });
+  const [objetivoRentabilidad, setObjetivoRentabilidad] = useState(60);
   const [loading, setLoading] = useState(true);
   const [guardado, setGuardado] = useState(false);
 
@@ -125,6 +126,12 @@ function App() {
       const costesData = localStorage.getItem('bmg_costes_hora');
       if (costesData) {
         setCostesHora(JSON.parse(costesData));
+      }
+
+      // Cargar objetivo de rentabilidad
+      const objData = localStorage.getItem('bmg_objetivo_rentabilidad');
+      if (objData) {
+        setObjetivoRentabilidad(parseFloat(objData));
       }
     } catch (error) {
       console.log('Inicializando configuración nueva');
@@ -172,6 +179,9 @@ function App() {
       
       // Guardar costes/hora
       localStorage.setItem('bmg_costes_hora', JSON.stringify(costesHora));
+
+      // Guardar objetivo de rentabilidad
+      localStorage.setItem('bmg_objetivo_rentabilidad', objetivoRentabilidad.toString());
 
       setGuardado(true);
       setTimeout(() => setGuardado(false), 3000);
@@ -293,6 +303,40 @@ function App() {
               />
               <div style={{textAlign:'center',fontSize:'11px',color:'var(--ink-dim)',marginTop:'6px'}}>
                 €/hora
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* SECCIÓN OBJETIVO DE RENTABILIDAD */}
+      <div className="section">
+        <div className="section-header">
+          <span>🎯 OBJETIVO DE RENTABILIDAD</span>
+        </div>
+        <div className="section-body">
+          <div className="alert info">
+            <span className="alert-icon">ℹ️</span>
+            <div>
+              Define el porcentaje de margen objetivo para tus proyectos. Se usará para colorear proyectos:
+              <br/>🟢 Verde: Margen ≥ Objetivo | 🟡 Amarillo: 0% &lt; Margen &lt; Objetivo | 🔴 Rojo: Margen &lt; 0%
+            </div>
+          </div>
+
+          <div style={{maxWidth: '300px', margin: '0 auto'}}>
+            <div className="coste-card" style={{borderLeftColor: 'var(--amber)'}}>
+              <div className="coste-label">Objetivo de Margen</div>
+              <input
+                type="number"
+                className="coste-input"
+                value={objetivoRentabilidad}
+                onChange={(e) => setObjetivoRentabilidad(parseFloat(e.target.value) || 0)}
+                step="1"
+                min="0"
+                max="100"
+              />
+              <div style={{textAlign:'center',fontSize:'11px',color:'var(--ink-dim)',marginTop:'6px'}}>
+                % de rentabilidad
               </div>
             </div>
           </div>

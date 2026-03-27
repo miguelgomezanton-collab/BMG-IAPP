@@ -65,6 +65,10 @@ nav{background:var(--ink);color:white;height:52px;padding:0 28px;display:flex;al
 .table tbody tr:hover{background:var(--surface2)}
 .table tbody tr:last-child{border-bottom:none}
 
+.table tbody tr.green{background:rgba(26,107,60,.08)}
+.table tbody tr.yellow{background:rgba(202,138,4,.08)}
+.table tbody tr.red{background:rgba(192,57,43,.08)}
+
 .table tbody td{padding:10px 12px;text-align:right;border-left:1px solid var(--border)}
 .table tbody td:first-child,
 .table tbody td:nth-child(2){text-align:left;border-left:none}
@@ -153,6 +157,7 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [costesHora, setCostesHora] = useState({});
   const [empleadosConfig, setEmpleadosConfig] = useState([]);
+  const [objetivoRentabilidad, setObjetivoRentabilidad] = useState(60);
   const [modalDesglose, setModalDesglose] = useState(null); // {cliente, proyecto, mes, datos}
 
   useEffect(() => {
@@ -177,6 +182,12 @@ function App() {
       const empData = localStorage.getItem('bmg_empleados_config');
       if (empData) {
         setEmpleadosConfig(JSON.parse(empData));
+      }
+
+      // Cargar objetivo de rentabilidad
+      const objData = localStorage.getItem('bmg_objetivo_rentabilidad');
+      if (objData) {
+        setObjetivoRentabilidad(parseFloat(objData));
       }
     } catch (error) {
       console.error('Error cargando datos:', error);
@@ -362,6 +373,12 @@ function App() {
     }).format(Math.round(cantidad));
   };
 
+  const getColorClase = (margenPct) => {
+    if (margenPct >= objetivoRentabilidad) return 'green';
+    if (margenPct > 0) return 'yellow';
+    return 'red';
+  };
+
   if (loading) {
     return <div className="loading">⏳ Cargando proyectos...</div>;
   }
@@ -481,9 +498,10 @@ function App() {
                 const facturacion = obtenerFacturacion(p.cliente, p.proyecto, vistaActiva);
                 const margen = facturacion - totalCoste;
                 const margenPct = facturacion > 0 ? (margen / facturacion) * 100 : 0;
+                const colorClase = getColorClase(margenPct);
                 
                 return (
-                  <tr key={idx}>
+                  <tr key={idx} className={colorClase}>
                     <td className="client-cell">{p.cliente}</td>
                     <td className="project-cell" style={{cursor: 'pointer', textDecoration: 'underline'}} onClick={() => abrirModalDesglose(p.cliente, p.proyecto)}>
                       {p.proyecto}
@@ -518,11 +536,17 @@ function App() {
                       {facturacion > 0 ? formatearEuros(facturacion) : '-'}
                     </td>
                     
-                    <td className="cost-cell" style={{color: margen >= 0 ? 'var(--green)' : 'var(--red)', fontWeight: 600}}>
+                    <td className={`cost-cell`} style={{
+                      color: colorClase === 'green' ? 'var(--green)' : colorClase === 'yellow' ? '#ca8a04' : 'var(--red)', 
+                      fontWeight: 600
+                    }}>
                       {facturacion > 0 ? formatearEuros(margen) : '-'}
                     </td>
                     
-                    <td className="cost-cell" style={{color: margen >= 0 ? 'var(--green)' : 'var(--red)', fontWeight: 700}}>
+                    <td className={`cost-cell`} style={{
+                      color: colorClase === 'green' ? 'var(--green)' : colorClase === 'yellow' ? '#ca8a04' : 'var(--red)', 
+                      fontWeight: 700
+                    }}>
                       {facturacion > 0 ? `${margenPct.toFixed(1)}%` : '-'}
                     </td>
                   </tr>
