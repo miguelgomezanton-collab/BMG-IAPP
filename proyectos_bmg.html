@@ -86,6 +86,31 @@ nav{background:var(--ink);color:white;height:52px;padding:0 28px;display:flex;al
 .empty-text{font-size:14px}
 
 .loading{min-height:100vh;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--ink-dim)}
+
+.modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;z-index:1000;padding:24px}
+.modal{background:var(--surface);border-radius:8px;max-width:800px;width:100%;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.modal-header{padding:20px 24px;border-bottom:1px solid var(--border);flex-shrink:0}
+.modal-title{font-size:18px;font-weight:700;color:var(--ink);margin-bottom:4px}
+.modal-subtitle{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ink-dim)}
+.modal-body{padding:20px 24px;overflow-y:auto;flex:1}
+.modal-footer{padding:16px 24px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;flex-shrink:0}
+
+.desglose-table{width:100%;border-collapse:collapse;font-size:12px}
+.desglose-table thead{background:var(--surface2)}
+.desglose-table th{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-faint);padding:10px 12px;text-align:left;font-weight:600;border-bottom:2px solid var(--border)}
+.desglose-table tbody tr{border-bottom:1px solid var(--border)}
+.desglose-table tbody tr:last-child{border-bottom:none}
+.desglose-table td{padding:10px 12px}
+.desglose-table .emp-name{font-weight:600;color:var(--ink)}
+.desglose-table .cat-badge{display:inline-block;padding:3px 8px;border-radius:3px;font-family:'IBM Plex Mono',monospace;font-size:8px;font-weight:600;letter-spacing:.05em;text-transform:uppercase}
+.desglose-table .cat-badge.LEGAL{background:rgba(239,68,68,.15);color:#b91c1c}
+.desglose-table .cat-badge.PARALEGAL{background:rgba(34,197,94,.15);color:#15803d}
+.desglose-table .cat-badge.IT{background:rgba(59,130,246,.15);color:#1e40af}
+.desglose-table .num-cell{font-family:'IBM Plex Mono',monospace;text-align:right;font-weight:600}
+
+.btn{padding:8px 16px;border-radius:4px;font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;cursor:pointer;border:none;transition:all .15s}
+.btn-secondary{background:var(--surface2);color:var(--ink-dim)}
+.btn-secondary:hover{background:var(--border);color:var(--ink)}
 </style>
 </head>
 <body>
@@ -128,6 +153,7 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [costesHora, setCostesHora] = useState({});
   const [empleadosConfig, setEmpleadosConfig] = useState([]);
+  const [modalDesglose, setModalDesglose] = useState(null); // {cliente, proyecto, mes, datos}
 
   useEffect(() => {
     cargarDatos();
@@ -196,6 +222,72 @@ function App() {
   const obtenerCategoriaEmpleado = (nombreEmpleado) => {
     const empleado = empleadosConfig.find(e => e.nombre === nombreEmpleado);
     return empleado ? empleado.categoria : null;
+  };
+
+  const obtenerFacturacion = (cliente, proyecto, mes) => {
+    try {
+      const facturacionData = localStorage.getItem('bmg_facturacion');
+      if (!facturacionData) return 0;
+      
+      const facturacion = JSON.parse(facturacionData);
+      
+      if (mes === 'ANUAL') {
+        // Sumar facturación de todos los meses
+        let total = 0;
+        MESES.forEach(m => {
+          const key = `${m}_${cliente}_${proyecto}`;
+          if (facturacion[key]) {
+            total += facturacion[key].importe || 0;
+          }
+        });
+        return total;
+      } else {
+        const key = `${mes}_${cliente}_${proyecto}`;
+        return facturacion[key] ? (facturacion[key].importe || 0) : 0;
+      }
+    } catch (error) {
+      return 0;
+    }
+  };
+
+  const obtenerDesgloseEmpleados = (cliente, proyecto, mes) => {
+    try {
+      const imputacionData = localStorage.getItem('bmg_datos_imputacion');
+      if (!imputacionData) return [];
+      
+      const imputaciones = JSON.parse(imputacionData);
+      const desglose = [];
+      
+      Object.entries(imputaciones).forEach(([key, imp]) => {
+        // Si es ANUAL, incluir todos los meses. Si no, solo el mes específico
+        if (mes !== 'ANUAL' && imp.mes !== mes) return;
+        
+        imp.proyectos.forEach(p => {
+          if (p.cliente === cliente && p.proyecto === proyecto) {
+            const categoria = obtenerCategoriaEmpleado(imp.empleado);
+            const costeHora = costesHora[categoria] || 0;
+            
+            desglose.push({
+              empleado: imp.empleado,
+              mes: imp.mes,
+              categoria: categoria || 'N/A',
+              horas: p.horas,
+              costeHora: costeHora,
+              costeTotal: p.horas * costeHora
+            });
+          }
+        });
+      });
+      
+      return desglose;
+    } catch (error) {
+      return [];
+    }
+  };
+
+  const abrirModalDesglose = (cliente, proyecto) => {
+    const desglose = obtenerDesgloseEmpleados(cliente, proyecto, vistaActiva);
+    setModalDesglose({ cliente, proyecto, mes: vistaActiva, desglose });
   };
 
   const calcularDatosMes = (mes) => {
@@ -279,6 +371,69 @@ function App() {
 
   return (
     <>
+      {/* MODAL DE DESGLOSE */}
+      {modalDesglose && (
+        <div className="modal-overlay" onClick={() => setModalDesglose(null)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <div className="modal-title">{modalDesglose.cliente} — {modalDesglose.proyecto}</div>
+              <div className="modal-subtitle">
+                Desglose de horas por empleado · {modalDesglose.mes === 'ANUAL' ? 'Año completo' : modalDesglose.mes}
+              </div>
+            </div>
+            <div className="modal-body">
+              {modalDesglose.desglose.length === 0 ? (
+                <div style={{textAlign: 'center', padding: '40px', color: 'var(--ink-dim)'}}>
+                  No hay imputaciones para este proyecto
+                </div>
+              ) : (
+                <table className="desglose-table">
+                  <thead>
+                    <tr>
+                      <th>Empleado</th>
+                      {modalDesglose.mes === 'ANUAL' && <th>Mes</th>}
+                      <th>Categoría</th>
+                      <th style={{textAlign: 'right'}}>Horas</th>
+                      <th style={{textAlign: 'right'}}>€/h</th>
+                      <th style={{textAlign: 'right'}}>Coste Total</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {modalDesglose.desglose.map((d, idx) => (
+                      <tr key={idx}>
+                        <td className="emp-name">{d.empleado}</td>
+                        {modalDesglose.mes === 'ANUAL' && <td style={{fontSize: '11px', color: 'var(--ink-dim)'}}>{d.mes}</td>}
+                        <td>
+                          <span className={`cat-badge ${d.categoria}`}>{d.categoria}</span>
+                        </td>
+                        <td className="num-cell">{d.horas.toFixed(1)}h</td>
+                        <td className="num-cell" style={{color: 'var(--ink-dim)'}}>{d.costeHora}€</td>
+                        <td className="num-cell" style={{color: 'var(--blue)'}}>{formatearEuros(d.costeTotal)}€</td>
+                      </tr>
+                    ))}
+                    <tr style={{borderTop: '2px solid var(--border)', background: 'var(--surface2)'}}>
+                      <td colSpan={modalDesglose.mes === 'ANUAL' ? 3 : 2} style={{fontWeight: 700}}>TOTAL</td>
+                      <td className="num-cell" style={{fontWeight: 700}}>
+                        {modalDesglose.desglose.reduce((sum, d) => sum + d.horas, 0).toFixed(1)}h
+                      </td>
+                      <td></td>
+                      <td className="num-cell" style={{fontWeight: 700, color: 'var(--blue)', fontSize: '13px'}}>
+                        {formatearEuros(modalDesglose.desglose.reduce((sum, d) => sum + d.costeTotal, 0))}€
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              )}
+            </div>
+            <div className="modal-footer">
+              <button className="btn btn-secondary" onClick={() => setModalDesglose(null)}>
+                Cerrar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="page-title">
         {vistaActiva === 'ANUAL' ? 'Resumen Anual de Actividad' : `Actividad Mensual - ${vistaActiva}`}
       </div>
@@ -306,6 +461,9 @@ function App() {
                 <th colSpan="2">PARALEGAL</th>
                 <th colSpan="2">IT</th>
                 <th rowSpan="2">TOTAL</th>
+                <th rowSpan="2">FACTURACIÓN</th>
+                <th rowSpan="2">MARGEN €</th>
+                <th rowSpan="2">MARGEN %</th>
               </tr>
               <tr className="sub-header">
                 <th>h</th>
@@ -320,11 +478,16 @@ function App() {
               {proyectos.map((p, idx) => {
                 const totalHoras = p.horas.LEGAL + p.horas.PARALEGAL + p.horas.IT;
                 const totalCoste = p.coste.LEGAL + p.coste.PARALEGAL + p.coste.IT;
+                const facturacion = obtenerFacturacion(p.cliente, p.proyecto, vistaActiva);
+                const margen = facturacion - totalCoste;
+                const margenPct = facturacion > 0 ? (margen / facturacion) * 100 : 0;
                 
                 return (
                   <tr key={idx}>
                     <td className="client-cell">{p.cliente}</td>
-                    <td className="project-cell">{p.proyecto}</td>
+                    <td className="project-cell" style={{cursor: 'pointer', textDecoration: 'underline'}} onClick={() => abrirModalDesglose(p.cliente, p.proyecto)}>
+                      {p.proyecto}
+                    </td>
                     
                     <td className="hours-cell col-group-legal">
                       {p.horas.LEGAL > 0 ? p.horas.LEGAL.toFixed(0) : ''}
@@ -349,6 +512,18 @@ function App() {
                     
                     <td className="total-cell col-group-total">
                       {formatearEuros(totalCoste)}
+                    </td>
+                    
+                    <td className="cost-cell" style={{color: 'var(--green)', fontWeight: 600}}>
+                      {facturacion > 0 ? formatearEuros(facturacion) : '-'}
+                    </td>
+                    
+                    <td className="cost-cell" style={{color: margen >= 0 ? 'var(--green)' : 'var(--red)', fontWeight: 600}}>
+                      {facturacion > 0 ? formatearEuros(margen) : '-'}
+                    </td>
+                    
+                    <td className="cost-cell" style={{color: margen >= 0 ? 'var(--green)' : 'var(--red)', fontWeight: 700}}>
+                      {facturacion > 0 ? `${margenPct.toFixed(1)}%` : '-'}
                     </td>
                   </tr>
                 );
