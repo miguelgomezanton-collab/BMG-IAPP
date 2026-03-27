@@ -137,6 +137,65 @@ const { useState, useEffect } = React;
 const MESES = ['ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO', 'JULIO', 'AGOSTO', 'SEPTIEMBRE', 'OCTUBRE', 'NOVIEMBRE', 'DICIEMBRE'];
 const MESES_CORTOS = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
 
+function ProyectoCard({ proyecto, datos, mesActivo, factActual, guardarFacturacion, formatearEuros }) {
+  const [valorInput, setValorInput] = React.useState(factActual);
+  
+  React.useEffect(() => {
+    setValorInput(factActual);
+  }, [factActual]);
+  
+  return (
+    <div className="project-card">
+      <div className="pc-header">
+        <div>
+          <div className="pc-title">{proyecto.cliente}</div>
+          <div className="pc-subtitle">{proyecto.proyecto}</div>
+        </div>
+      </div>
+      
+      <div className="pc-stats">
+        <div className="pc-stat">
+          <div className="pc-stat-label">Horas {mesActivo}</div>
+          <div className={`pc-stat-value ${datos.horas === 0 ? 'dim' : ''}`}>
+            {datos.horas > 0 ? `${datos.horas.toFixed(1)}h` : 'Sin imputación'}
+          </div>
+        </div>
+        <div className="pc-stat">
+          <div className="pc-stat-label">Coste</div>
+          <div className={`pc-stat-value ${datos.coste === 0 ? 'dim' : ''}`}>
+            {datos.coste > 0 ? `${formatearEuros(datos.coste)}€` : '—'}
+          </div>
+        </div>
+      </div>
+      
+      <div className="pc-input-row">
+        <div className="pc-input-label">Facturación:</div>
+        <div className="pc-input-wrapper">
+          <span className="pc-input-symbol">€</span>
+          <input
+            type="number"
+            className={`pc-input ${factActual > 0 ? 'filled' : ''}`}
+            placeholder="0"
+            value={valorInput || ''}
+            onChange={(e) => setValorInput(e.target.value)}
+            onKeyPress={(e) => {
+              if (e.key === 'Enter') {
+                guardarFacturacion(proyecto.cliente, proyecto.proyecto, valorInput);
+              }
+            }}
+          />
+        </div>
+        <button
+          className="btn-save"
+          onClick={() => guardarFacturacion(proyecto.cliente, proyecto.proyecto, valorInput)}
+        >
+          💾 Guardar
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function App() {
   const [mesActivo, setMesActivo] = useState('ENERO');
   const [loading, setLoading] = useState(true);
@@ -406,57 +465,17 @@ function App() {
             const datos = calcularDatosProyecto(p.cliente, p.proyecto, mesActivo);
             const key = `${mesActivo}_${p.cliente}_${p.proyecto}`;
             const factActual = facturacion[key]?.importe || 0;
-            const [valorInput, setValorInput] = useState(factActual);
             
             return (
-              <div key={p.id} className="project-card">
-                <div className="pc-header">
-                  <div>
-                    <div className="pc-title">{p.cliente}</div>
-                    <div className="pc-subtitle">{p.proyecto}</div>
-                  </div>
-                </div>
-                
-                <div className="pc-stats">
-                  <div className="pc-stat">
-                    <div className="pc-stat-label">Horas {mesActivo}</div>
-                    <div className={`pc-stat-value ${datos.horas === 0 ? 'dim' : ''}`}>
-                      {datos.horas > 0 ? `${datos.horas.toFixed(1)}h` : 'Sin imputación'}
-                    </div>
-                  </div>
-                  <div className="pc-stat">
-                    <div className="pc-stat-label">Coste</div>
-                    <div className={`pc-stat-value ${datos.coste === 0 ? 'dim' : ''}`}>
-                      {datos.coste > 0 ? `${formatearEuros(datos.coste)}€` : '—'}
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="pc-input-row">
-                  <div className="pc-input-label">Facturación:</div>
-                  <div className="pc-input-wrapper">
-                    <span className="pc-input-symbol">€</span>
-                    <input
-                      type="number"
-                      className={`pc-input ${factActual > 0 ? 'filled' : ''}`}
-                      placeholder="0"
-                      defaultValue={factActual || ''}
-                      onChange={(e) => setValorInput(e.target.value)}
-                      onKeyPress={(e) => {
-                        if (e.key === 'Enter') {
-                          guardarFacturacion(p.cliente, p.proyecto, valorInput);
-                        }
-                      }}
-                    />
-                  </div>
-                  <button
-                    className="btn-save"
-                    onClick={() => guardarFacturacion(p.cliente, p.proyecto, valorInput)}
-                  >
-                    💾 Guardar
-                  </button>
-                </div>
-              </div>
+              <ProyectoCard
+                key={p.id}
+                proyecto={p}
+                datos={datos}
+                mesActivo={mesActivo}
+                factActual={factActual}
+                guardarFacturacion={guardarFacturacion}
+                formatearEuros={formatearEuros}
+              />
             );
           })}
         </div>
