@@ -16,6 +16,7 @@
   --green:#1a6b3c; --green-bg:#eaf4ee; --green-border:#b8ddc6;
   --blue:#1a4a8a; --blue-bg:#eef3fc; --blue-border:#b8cde8;
   --amber:#9a5a00; --amber-bg:#fdf5e6;
+  --red:#c0392b; --red-bg:#fdf0ee;
 }
 *{margin:0;padding:0;box-sizing:border-box}
 body{background:var(--bg);color:var(--ink);font-family:'IBM Plex Sans',sans-serif;font-size:14px;min-height:100vh;display:flex;flex-direction:column}
@@ -50,6 +51,9 @@ nav{background:var(--ink);color:white;height:52px;padding:0 28px;display:flex;al
 
 .btn-new{display:inline-flex;align-items:center;gap:8px;padding:10px 16px;background:var(--blue);color:white;border:none;border-radius:4px;font-family:'IBM Plex Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s}
 .btn-new:hover{background:#143d75;transform:translateY(-1px)}
+
+.btn-delete-all{display:inline-flex;align-items:center;gap:8px;padding:10px 16px;background:var(--red);color:white;border:none;border-radius:4px;font-family:'IBM Plex Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;margin-left:12px}
+.btn-delete-all:hover{background:#9c2e22;transform:translateY(-1px)}
 
 .project-list{display:flex;flex-direction:column;gap:12px;margin-top:20px}
 .project-card{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:16px 20px;transition:box-shadow .15s}
@@ -100,10 +104,10 @@ nav{background:var(--ink);color:white;height:52px;padding:0 28px;display:flex;al
 .btn-primary{background:var(--blue);color:white}
 .btn-primary:hover{background:#143d75}
 
-.loading{min-height:100vh;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--ink-dim)}
-
-.success-toast{position:fixed;bottom:24px;right:24px;background:var(--green);color:white;padding:12px 20px;border-radius:6px;font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;box-shadow:0 4px 12px rgba(0,0,0,.2);animation:slideIn .3s ease;z-index:2000}
+.toast{position:fixed;bottom:24px;right:24px;background:var(--green);color:white;padding:16px 20px;border-radius:6px;box-shadow:0 4px 12px rgba(0,0,0,.2);font-family:'IBM Plex Mono',monospace;font-size:12px;z-index:2000;animation:slideIn .3s ease}
 @keyframes slideIn{from{transform:translateY(100px);opacity:0}to{transform:translateY(0);opacity:1}}
+
+.loading{text-align:center;padding:60px 24px;color:var(--ink-dim);font-family:'IBM Plex Mono',monospace;font-size:12px}
 </style>
 </head>
 <body>
@@ -114,36 +118,37 @@ nav{background:var(--ink);color:white;height:52px;padding:0 28px;display:flex;al
     <span class="nav-sep">/</span>
     <span class="nav-title">Facturación</span>
   </div>
-  <div class="nav-right" id="nav-right">2026</div>
+  <div class="nav-right">Registro de ingresos</div>
 </nav>
 
 <div class="layout">
-  <div class="sidebar">
-    <div class="sb-head">
-      <div class="sb-head-label">Control Mensual</div>
-      <div class="sb-head-sub">Facturación por proyecto</div>
-    </div>
-    <div class="sb-months" id="sb-months"></div>
-  </div>
-
+  <div class="sidebar" id="sidebar"></div>
   <div class="main">
-    <div class="main-inner" id="main-content"></div>
+    <div class="main-inner" id="root"></div>
   </div>
 </div>
 
 <script type="text/babel">
 const { useState, useEffect } = React;
 
-const MESES = ['ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO', 'JULIO', 'AGOSTO', 'SEPTIEMBRE', 'OCTUBRE', 'NOVIEMBRE', 'DICIEMBRE'];
-const MESES_CORTOS = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+const MESES = [
+  'ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO',
+  'JULIO', 'AGOSTO', 'SEPTIEMBRE', 'OCTUBRE', 'NOVIEMBRE', 'DICIEMBRE'
+];
 
-function ProyectoCard({ proyecto, datos, mesActivo, factActual, guardarFacturacion, formatearEuros }) {
-  const [valorInput, setValorInput] = React.useState(factActual);
-  
-  React.useEffect(() => {
+function ProyectoCard({ proyecto, mesActivo, facturacionMes, calcularDatosProyecto, guardarFacturacion }) {
+  const datos = calcularDatosProyecto(proyecto.cliente, proyecto.proyecto, mesActivo);
+  const factActual = facturacionMes || 0;
+  const [valorInput, setValorInput] = useState(factActual);
+
+  useEffect(() => {
     setValorInput(factActual);
-  }, [factActual]);
-  
+  }, [factActual, mesActivo]);
+
+  const formatearEuros = (num) => {
+    return new Intl.NumberFormat('es-ES', { maximumFractionDigits: 0 }).format(num);
+  };
+
   return (
     <div className="project-card">
       <div className="pc-header">
@@ -248,125 +253,104 @@ function App() {
         setEmpleadosConfig(JSON.parse(empData));
       }
     } catch (error) {
-      console.error('Error cargando datos:', error);
+      console.log('Inicializando datos');
     } finally {
       setLoading(false);
     }
   };
 
-  const renderSidebar = () => {
-    const year = new Date().getFullYear();
-    let html = `<div class="sb-section-label">${year}</div>`;
-    
-    MESES.forEach((mes, idx) => {
-      const active = mes === mesActivo ? 'active' : '';
-      
-      // Contar proyectos facturados en este mes
-      const facturados = proyectos.filter(p => {
-        const key = `${mes}_${p.cliente}_${p.proyecto}`;
-        return facturacion[key] && facturacion[key].importe > 0;
-      }).length;
-      
-      const indicator = facturados > 0 ? `<span class="sb-month-indicator">✓</span>` : '';
-      
-      html += `
-        <div class="sb-month ${active}" onclick="window.seleccionarMes('${mes}')">
-          <span>${MESES_CORTOS[idx]}</span>
-          ${indicator}
-        </div>
-      `;
-    });
-    
-    document.getElementById('sb-months').innerHTML = html;
-  };
-
-  window.seleccionarMes = (mes) => {
-    setMesActivo(mes);
-    document.getElementById('nav-right').textContent = mes + ' 2026';
-  };
-
-  const obtenerCategoriaEmpleado = (nombreEmpleado) => {
-    const empleado = empleadosConfig.find(e => e.nombre === nombreEmpleado);
-    return empleado ? empleado.categoria : null;
+  const borrarTodosLosDatos = () => {
+    if (window.confirm('⚠️ ¿ESTÁS SEGURO?\n\nEsto borrará TODA la facturación registrada.\nEsta acción NO se puede deshacer.\n\n¿Continuar?')) {
+      try {
+        localStorage.removeItem('bmg_facturacion');
+        setFacturacion({});
+        alert('✅ Todos los datos de facturación han sido borrados');
+        cargarDatos();
+      } catch (error) {
+        alert('❌ Error al borrar los datos');
+      }
+    }
   };
 
   const calcularDatosProyecto = (cliente, proyecto, mes) => {
+    const datos = { horas: 0, coste: 0 };
+    
     try {
-      const imputacionData = localStorage.getItem('bmg_datos_imputacion');
-      if (!imputacionData) return { horas: 0, coste: 0 };
-      
-      const imputaciones = JSON.parse(imputacionData);
-      let totalHoras = 0;
-      let totalCoste = 0;
-      
-      Object.entries(imputaciones).forEach(([key, imp]) => {
-        if (imp.mes !== mes) return;
-        
-        const categoria = obtenerCategoriaEmpleado(imp.empleado);
-        if (!categoria) return;
-        
-        imp.proyectos.forEach(p => {
-          if (p.cliente === cliente && p.proyecto === proyecto) {
-            totalHoras += p.horas;
-            totalCoste += p.horas * (costesHora[categoria] || 0);
-          }
-        });
-      });
-      
-      return { horas: totalHoras, coste: totalCoste };
-    } catch (error) {
-      return { horas: 0, coste: 0 };
-    }
-  };
+      const datosImpData = localStorage.getItem('bmg_datos_imputacion');
+      if (!datosImpData) return datos;
 
-  const formatearEuros = (cantidad) => {
-    return new Intl.NumberFormat('es-ES', {
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0
-    }).format(Math.round(cantidad));
+      const datosImp = JSON.parse(datosImpData);
+      
+      Object.keys(datosImp).forEach(key => {
+        const [mesDato] = key.split('_');
+        if (mesDato === mes) {
+          const datos = datosImp[key];
+          if (datos.proyectos) {
+            datos.proyectos.forEach(proy => {
+              if (proy.cliente === cliente && proy.proyecto === proyecto) {
+                const empleado = empleadosConfig.find(e => e.nombre === datos.empleado);
+                if (empleado) {
+                  const costeHoraEmpleado = costesHora[empleado.categoria] || 0;
+                  datos.horas += proy.horas;
+                  datos.coste += proy.horas * costeHoraEmpleado;
+                }
+              }
+            });
+          }
+        }
+      });
+    } catch (error) {
+      console.log('Error calculando datos');
+    }
+
+    return datos;
   };
 
   const guardarFacturacion = (cliente, proyecto, importe) => {
-    try {
-      const key = `${mesActivo}_${cliente}_${proyecto}`;
-      const nuevaFacturacion = {
-        ...facturacion,
-        [key]: {
-          mes: mesActivo,
-          cliente,
-          proyecto,
-          importe: parseFloat(importe) || 0
-        }
-      };
-      
-      setFacturacion(nuevaFacturacion);
-      localStorage.setItem('bmg_facturacion', JSON.stringify(nuevaFacturacion));
-      
-      // Mostrar toast de éxito
-      setMostrarToast(true);
-      setTimeout(() => setMostrarToast(false), 3000);
-    } catch (error) {
-      alert('Error al guardar: ' + error.message);
+    const importeNum = parseFloat(importe) || 0;
+    if (importeNum < 0) {
+      alert('⚠️ El importe no puede ser negativo');
+      return;
     }
+
+    const key = `${mesActivo}_${cliente}_${proyecto}`;
+    const nuevaFacturacion = { ...facturacion };
+    
+    if (importeNum === 0) {
+      delete nuevaFacturacion[key];
+    } else {
+      nuevaFacturacion[key] = {
+        mes: mesActivo,
+        cliente: cliente,
+        proyecto: proyecto,
+        importe: importeNum
+      };
+    }
+
+    localStorage.setItem('bmg_facturacion', JSON.stringify(nuevaFacturacion));
+    setFacturacion(nuevaFacturacion);
+    
+    setMostrarToast(true);
+    setTimeout(() => setMostrarToast(false), 2000);
   };
 
   const crearNuevoProyecto = () => {
     if (!nuevoProyecto.cliente.trim() || !nuevoProyecto.proyecto.trim()) {
-      alert('Debes completar ambos campos');
+      alert('⚠️ Debes completar cliente y proyecto');
       return;
     }
 
+    const key = `${nuevoProyecto.cliente}_${nuevoProyecto.proyecto}`;
+    
     try {
-      const proyectosData = localStorage.getItem('bmg_proyectos');
-      const proyectosObj = proyectosData ? JSON.parse(proyectosData) : {};
-      
-      const key = `${nuevoProyecto.cliente}_${nuevoProyecto.proyecto}`;
+      const proyectosData = localStorage.getItem('bmg_proyectos') || '{}';
+      const proyectosObj = JSON.parse(proyectosData);
       
       if (proyectosObj[key]) {
-        alert('Este proyecto ya existe');
+        alert('⚠️ Este proyecto ya existe');
         return;
       }
-      
+
       proyectosObj[key] = {
         cliente: nuevoProyecto.cliente,
         proyecto: nuevoProyecto.proyecto,
@@ -374,57 +358,125 @@ function App() {
         fechaCreacion: new Date().toISOString(),
         origenManual: true
       };
-      
+
       localStorage.setItem('bmg_proyectos', JSON.stringify(proyectosObj));
       
       setMostrarModalNuevo(false);
       setNuevoProyecto({ cliente: '', proyecto: '' });
       cargarDatos();
+      alert('✅ Proyecto creado correctamente');
     } catch (error) {
-      alert('Error al crear proyecto: ' + error.message);
+      alert('❌ Error al crear el proyecto');
     }
   };
 
+  const renderSidebar = () => {
+    const contarFacturacion = (mes) => {
+      return Object.keys(facturacion).filter(key => key.startsWith(mes + '_')).length;
+    };
+
+    const sidebar = (
+      <div>
+        <div className="sb-head">
+          <div className="sb-head-label">PERÍODO</div>
+          <div className="sb-head-sub">Selecciona mes</div>
+        </div>
+        <div className="sb-months">
+          <div className="sb-section-label">2025</div>
+          {MESES.map(mes => {
+            const count = contarFacturacion(mes);
+            return (
+              <div
+                key={mes}
+                className={`sb-month ${mes === mesActivo ? 'active' : ''}`}
+                onClick={() => setMesActivo(mes)}
+              >
+                <span>{mes}</span>
+                {count > 0 && <span className="sb-month-indicator">✓</span>}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+
+    ReactDOM.render(sidebar, document.getElementById('sidebar'));
+  };
+
   if (loading) {
-    return <div className="loading">⏳ Cargando facturación...</div>;
+    return <div className="loading">⏳ Cargando datos...</div>;
   }
 
   return (
     <>
-      {/* TOAST DE ÉXITO */}
-      {mostrarToast && (
-        <div className="success-toast">
-          ✓ Facturación guardada
+      <div className="page-header">
+        <div>
+          <div className="page-title">Facturación {mesActivo}</div>
+          <div className="page-sub">Registra los importes facturados por proyecto</div>
+        </div>
+        <div>
+          <button className="btn-new" onClick={() => setMostrarModalNuevo(true)}>
+            + Nuevo Proyecto
+          </button>
+          <button className="btn-delete-all" onClick={borrarTodosLosDatos}>
+            🗑️ Borrar Todo
+          </button>
+        </div>
+      </div>
+
+      {proyectos.length === 0 ? (
+        <div className="empty-state">
+          <div className="empty-icon">📊</div>
+          <div className="empty-text">
+            No hay proyectos registrados. Sube imputaciones o crea proyectos manualmente.
+          </div>
+        </div>
+      ) : (
+        <div className="project-list">
+          {proyectos.map(proyecto => {
+            const key = `${mesActivo}_${proyecto.cliente}_${proyecto.proyecto}`;
+            const factMes = facturacion[key]?.importe || 0;
+            
+            return (
+              <ProyectoCard
+                key={proyecto.id}
+                proyecto={proyecto}
+                mesActivo={mesActivo}
+                facturacionMes={factMes}
+                calcularDatosProyecto={calcularDatosProyecto}
+                guardarFacturacion={guardarFacturacion}
+              />
+            );
+          })}
         </div>
       )}
 
-      {/* MODAL NUEVO PROYECTO */}
       {mostrarModalNuevo && (
         <div className="modal-overlay" onClick={() => setMostrarModalNuevo(false)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <div className="modal-title">Crear Nuevo Proyecto</div>
-              <div className="modal-subtitle">Se añadirá a la lista de proyectos</div>
+              <div className="modal-title">Nuevo Proyecto</div>
+              <div className="modal-subtitle">Crear proyecto para facturar antes de imputar</div>
             </div>
             <div className="modal-body">
               <div className="form-group">
-                <label className="form-label">Cliente *</label>
+                <label className="form-label">Cliente</label>
                 <input
                   type="text"
                   className="form-input"
-                  placeholder="Ej: AIQON"
                   value={nuevoProyecto.cliente}
-                  onChange={(e) => setNuevoProyecto({ ...nuevoProyecto, cliente: e.target.value })}
+                  onChange={(e) => setNuevoProyecto({...nuevoProyecto, cliente: e.target.value})}
+                  placeholder="Nombre del cliente..."
                 />
               </div>
               <div className="form-group">
-                <label className="form-label">Proyecto *</label>
+                <label className="form-label">Proyecto</label>
                 <input
                   type="text"
                   className="form-input"
-                  placeholder="Ej: Abogado"
                   value={nuevoProyecto.proyecto}
-                  onChange={(e) => setNuevoProyecto({ ...nuevoProyecto, proyecto: e.target.value })}
+                  onChange={(e) => setNuevoProyecto({...nuevoProyecto, proyecto: e.target.value})}
+                  placeholder="Nombre del proyecto..."
                 />
               </div>
             </div>
@@ -440,51 +492,16 @@ function App() {
         </div>
       )}
 
-      {/* CONTENIDO PRINCIPAL */}
-      <div className="page-header">
-        <div>
-          <div className="page-title">Facturación — {mesActivo} 2026</div>
-          <div className="page-sub">Ingresa el importe facturado por proyecto</div>
-        </div>
-        <button className="btn-new" onClick={() => setMostrarModalNuevo(true)}>
-          <span>+</span>
-          <span>Nuevo Proyecto</span>
-        </button>
-      </div>
-
-      {proyectos.length === 0 ? (
-        <div className="empty-state">
-          <div className="empty-icon">💰</div>
-          <div className="empty-text">
-            No hay proyectos activos. Crea uno manualmente o sube imputaciones.
-          </div>
-        </div>
-      ) : (
-        <div className="project-list">
-          {proyectos.map(p => {
-            const datos = calcularDatosProyecto(p.cliente, p.proyecto, mesActivo);
-            const key = `${mesActivo}_${p.cliente}_${p.proyecto}`;
-            const factActual = facturacion[key]?.importe || 0;
-            
-            return (
-              <ProyectoCard
-                key={p.id}
-                proyecto={p}
-                datos={datos}
-                mesActivo={mesActivo}
-                factActual={factActual}
-                guardarFacturacion={guardarFacturacion}
-                formatearEuros={formatearEuros}
-              />
-            );
-          })}
+      {mostrarToast && (
+        <div className="toast">
+          ✓ Facturación guardada
         </div>
       )}
     </>
   );
 }
 
-ReactDOM.render(<App />, document.getElementById('main-content'));
+ReactDOM.render(<App />, document.getElementById('root'));
 </script>
 
 </body>
